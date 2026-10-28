@@ -6,3 +6,6 @@ __pycache__/
 .streamlit/secrets.toml
 .vscode/
 .idea/
+
+# Note interne con dati reali della busta paga: solo in locale
+HANDOFF_busta_paga.md
