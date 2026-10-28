@@ -10,6 +10,7 @@ if str(BASE_DIR) not in sys.path:
 import streamlit as st
 
 from src.i18n import lingua_corrente, selettore_lingua
+from src.stile import applica_stile, card_menu
 
 st.set_page_config(page_title="Menu · Salary Slip", page_icon="🧾", layout="wide")
 
@@ -22,14 +23,16 @@ def menu() -> None:
                 "Understand every line of your payslip: gross pay, taxes, contributions and net pay."))
     c1, c2 = st.columns(2)
     with c1:
-        st.subheader(tr("🇩🇪 Cedolino tedesco", "🇩🇪 German payslip"))
-        st.write(tr("Carica il PDF DATEV o calcola dallo stipendio lordo (anche con pensione aziendale bAV): spiego ogni voce e ricalcolo i contributi.",
-                    "Upload the DATEV PDF or calculate from gross salary (including company pension bAV): I explain every line and recheck the contributions."))
+        st.html(card_menu("de", tr("CEDOLINO TEDESCO", "GERMAN PAYSLIP"), "Brutto/Netto-Abrechnung",
+                          tr("Carica il PDF DATEV o calcola dallo stipendio lordo: spiego ogni voce e ricalcolo i contributi.",
+                             "Upload the DATEV PDF or calculate from gross salary: I explain every line and recheck the contributions."),
+                          ["PDF DATEV", tr("Calcolo da stipendio", "Salary calculator"), "bAV", "Wellpass"]))
         st.page_link("pages/1_Cedolino_tedesco.py", label=tr("Apri", "Open"), icon="🇩🇪")
     with c2:
-        st.subheader(tr("🇮🇹 Cedolino italiano", "🇮🇹 Italian payslip"))
-        st.write(tr("Carica il PDF del cedolino o inserisci la RAL: INPS, IRPEF, addizionali, detrazioni, netto mensile e TFR.",
-                    "Upload the payslip PDF or enter your gross salary (RAL): INPS, IRPEF, surcharges, tax credits, monthly net pay and TFR."))
+        st.html(card_menu("it", tr("CEDOLINO ITALIANO", "ITALIAN PAYSLIP"), tr("Busta paga · Cedolino", "Cedolino"),
+                          tr("Carica il PDF del cedolino o inserisci la RAL: INPS, IRPEF, addizionali, detrazioni, netto mensile e TFR.",
+                             "Upload the payslip PDF or enter your gross salary (RAL): INPS, IRPEF, surcharges, tax credits, monthly net pay and TFR."),
+                          ["PDF", tr("Calcolo da RAL", "RAL calculator"), "IRPEF", "TFR"]))
         st.page_link("pages/2_Cedolino_italiano.py", label=tr("Apri", "Open"), icon="🇮🇹")
     st.caption(tr("Il PDF viene elaborato solo nel server dell'app e non viene salvato. Non è consulenza fiscale.",
                   "The PDF is processed only on the app server and is not stored. This is not tax advice."))
@@ -44,5 +47,6 @@ def pagine():
     ]
 
 
+applica_stile()
 pagina = st.navigation(pagine())
 pagina.run()

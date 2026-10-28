@@ -35,10 +35,10 @@ def componente_html(report: str, titolo: str, lang: str = "it") -> str:
     t = TESTI.get(lang, TESTI["it"])
     doc = json.dumps(documento_stampa(report, titolo, lang)).replace("</", r"<\/")
     return (
-        "<style>body{margin:0;font-family:system-ui,-apple-system,'Segoe UI',sans-serif}"
-        "button{font:inherit;font-weight:600;padding:.55rem 1.1rem;border-radius:.5rem;border:1px solid rgba(127,127,127,.5);"
-        "background:transparent;color:inherit;cursor:pointer}button:hover{border-color:#ff4b4b;color:#ff4b4b}"
-        "small{display:block;margin-top:.4rem;opacity:.65;font-size:.8rem}</style>"
+        "<style>body{margin:0;font-family:'Barlow',system-ui,-apple-system,'Segoe UI',sans-serif}"
+        "button{font:inherit;font-weight:600;padding:.6rem 1.4rem;border-radius:999px;border:0;background:#7c35f5;color:#fff;cursor:pointer}"
+        "button:hover{background:#6a24e0}button:focus-visible{outline:3px solid #ff5a36;outline-offset:2px}"
+        "small{display:block;margin-top:.45rem;color:#8a8794;font-size:.8rem}</style>"
         f"<button id='b'>{t['btn']}</button><small>{t['hint']}</small>"
         f"<script>var DOC={doc};"
         "document.getElementById('b').addEventListener('click',function(){"
