@@ -42,3 +42,16 @@ def test_render_italiano_e_formato_importi():
     assert eur(-3676.0) == "− € 3.676,00" and eur(1234.5) == "€ 1.234,50"
     html = report_html(calcola(40_000, 13), 1.73, 0.8, 2100.0)
     assert "NETTO A PAGARE" in html and "Il tuo cedolino" in html
+
+
+def test_parser_cedolino_sintetico():
+    from src.it_parser import num, parse
+    assert num("93", centesimi=True) == 0.93 and num("3298,15") == 3298.15 and num(",42") == 0.42
+    assert num("1 0.143,05") == 10143.05 and num("2.286,00") == 2286.0
+    it = lambda s, x, y, w=40: {"str": s, "x": x, "y": y, "w": w}
+    pagina = [it("COD. PAS.", 49, 622), it("TOTALI", 360, 277), it("ARROTONDAMENTI", 346, 291),
+              it("AA00 RETRIBUZIONE ORDINARIA", 51, 607), it("3298,15", 460, 607), it("AB86 TRATTENUTA MENSA", 51, 595), it("93", 570, 595),
+              it("3.298,15", 449, 279), it("0,93", 530, 279), it("EURO", 463, 267), it("3.297,22", 456, 256)]
+    r = parse([pagina])
+    assert r["ok"] and r["totalComp"] == 3298.15 and r["netto"] == 3297.22 and r["warnings"] == []
+    assert parse([[it("altro", 0, 0)]])["ok"] is False
