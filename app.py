@@ -1,4 +1,4 @@
-"""Home dell'app Salary Slip: cedolino tedesco (da PDF) e italiano (da RAL), spiegati voce per voce."""
+"""Menu dell'app Salary Slip: cedolino tedesco (da PDF) e italiano (da RAL), spiegati voce per voce."""
 
 import sys
 from pathlib import Path
@@ -9,19 +9,27 @@ if str(BASE_DIR) not in sys.path:
 
 import streamlit as st
 
-st.set_page_config(page_title="Salary Slip", page_icon="🧾", layout="wide")
+st.set_page_config(page_title="Menu · Salary Slip", page_icon="🧾", layout="wide")
 
-st.title("🧾 Salary Slip")
-st.write("Capisci ogni voce della tua busta paga: lordo, tasse, contributi e netto.")
 
-c1, c2 = st.columns(2)
-with c1:
-    st.subheader("🇩🇪 Cedolino tedesco")
-    st.write("Carica il PDF DATEV: lo leggo in locale con uno script, spiego ogni voce e ricalcolo i contributi.")
-    st.page_link("pages/1_Cedolino_tedesco.py", label="Apri", icon="🇩🇪")
-with c2:
-    st.subheader("🇮🇹 Cedolino italiano")
-    st.write("Inserisci la RAL: calcolo INPS, IRPEF, addizionali, detrazioni, netto mensile e TFR.")
-    st.page_link("pages/2_Cedolino_italiano.py", label="Apri", icon="🇮🇹")
+def menu() -> None:
+    st.title("🧾 Menu")
+    st.write("Capisci ogni voce della tua busta paga: lordo, tasse, contributi e netto.")
+    c1, c2 = st.columns(2)
+    with c1:
+        st.subheader("🇩🇪 Cedolino tedesco")
+        st.write("Carica il PDF DATEV: lo leggo con uno script, spiego ogni voce e ricalcolo i contributi.")
+        st.page_link("pages/1_Cedolino_tedesco.py", label="Apri", icon="🇩🇪")
+    with c2:
+        st.subheader("🇮🇹 Cedolino italiano")
+        st.write("Inserisci la RAL: calcolo INPS, IRPEF, addizionali, detrazioni, netto mensile e TFR.")
+        st.page_link("pages/2_Cedolino_italiano.py", label="Apri", icon="🇮🇹")
+    st.caption("Il PDF viene elaborato solo nel server dell'app e non viene salvato. Non è consulenza fiscale.")
 
-st.caption("Il PDF viene elaborato solo nel server dell'app e non viene salvato. Non è consulenza fiscale.")
+
+pagina = st.navigation([
+    st.Page(menu, title="Menu", icon="🧾", default=True, url_path="menu"),
+    st.Page("pages/1_Cedolino_tedesco.py", title="Cedolino tedesco", icon="🇩🇪", url_path="tedesco"),
+    st.Page("pages/2_Cedolino_italiano.py", title="Cedolino italiano", icon="🇮🇹", url_path="italiano"),
+])
+pagina.run()

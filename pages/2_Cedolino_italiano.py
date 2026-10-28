@@ -12,7 +12,6 @@ import streamlit as st
 from src.it_payslip import calcola
 from src.it_render import report_html
 
-st.set_page_config(page_title="Cedolino italiano", page_icon="🇮🇹", layout="wide")
 
 
 st.title("🇮🇹 Cedolino italiano")

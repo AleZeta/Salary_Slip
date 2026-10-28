@@ -14,7 +14,6 @@ from src import de_parser
 from src.de_payslip import da_inserimento_manuale, normalizza
 from src.de_render import report_html
 
-st.set_page_config(page_title="Cedolino tedesco", page_icon="🇩🇪", layout="wide")
 MESI = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre",
         "novembre", "dicembre"]
 
