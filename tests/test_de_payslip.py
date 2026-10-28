@@ -67,3 +67,14 @@ def test_parse_pagina_sintetica():
     r = parse([pagina])
     assert r["ok"] and r["month"] == 8 and r["year"] == 2026 and r["taxClass"] == 1
     assert parse([[it("altro", 0, 0)]])["ok"] is False
+
+
+def test_calcolo_da_stipendio_coincide_col_cedolino():
+    from src.de_calc import calcola, einkommensteuer_32a
+    d = calcola(75_000, 17.29, ha_figli=False)
+    # valori stampati sul cedolino (stipendio 6.250 €/mese, Steuerklasse 1, senza figli)
+    assert (d["wageTax"], d["kv"], d["rv"], d["av"], d["pv"]) == (1162.50, 502.49, 581.25, 81.25, 139.50)
+    assert d["svTotal"] == 1304.49 and d["agSv"] == 1269.62
+    assert einkommensteuer_32a(12_000) == 0
+    assert normalizza(d)["warnings"] == []
+    assert calcola(0)["payout"] == 0

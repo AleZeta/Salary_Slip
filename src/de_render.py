@@ -127,7 +127,7 @@ def _check(actual: float, atteso: float) -> str:
 
 
 def report_html(d: Dict, dark: Optional[bool] = None) -> str:
-    sorgente = {"datev": "letta da PDF DATEV", "manual": "inserita a mano"}.get(d.get("source"), "")
+    sorgente = {"datev": "letta da PDF DATEV", "manual": "inserita a mano", "calc": "calcolo da stipendio annuo · 2026"}.get(d.get("source"), "")
     periodo = f"{MESI[d['month'] - 1].capitalize()} {d.get('year', '')}" if d.get("month") else str(d.get("year", ""))
     meta = "".join(f"<span>{_e(k)} <b>{_e(v)}</b></span>" for k, v in
                    (("Datore di lavoro", d.get("employer")), ("Pagata il", d.get("payDate")), ("Assunto dal", d.get("startDate"))) if v)
