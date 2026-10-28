@@ -2,16 +2,16 @@
 
 from typing import Optional
 
-from src.de_render import CSS, _e, _item, eur, pct
+from src.de_render import CSS, _classe_tema, _e, _item, eur, pct
 from src.it_payslip import RisultatoIT
 
 
-def report_html(r: RisultatoIT, reg_pct: float, com_pct: float, netto_cedolino: Optional[float] = None, dark: bool = False) -> str:
+def report_html(r: RisultatoIT, reg_pct: float, com_pct: float, netto_cedolino: Optional[float] = None, dark: Optional[bool] = None) -> str:
     m = r.mensilita
     mensile = lambda v: v / m
     trattenute = r.inps + r.irpef_netta + r.add_regionale + r.add_comunale + r.extra_ded - r.bonus_cuneo
     det_tot = r.detrazione_lavoro + r.detrazione_cuneo
-    h = [f'<style>{CSS}</style><div class="ps{" dark" if dark else ""}">',
+    h = [f'<style>{CSS}</style><div class="ps{_classe_tema(dark)}">',
          f'<div class="rhead"><h2>Dalla RAL al netto<span class="src">calcolo 2026 · {m} mensilità</span></h2>'
          f'<div class="meta"><span>RAL <b>{_e(eur(r.ral))}</b></span><span>Addizionale regionale <b>{_e(pct(reg_pct))}</b></span>'
          f'<span>Addizionale comunale <b>{_e(pct(com_pct))}</b></span></div></div>']

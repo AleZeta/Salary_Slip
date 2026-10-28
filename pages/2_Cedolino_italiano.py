@@ -29,7 +29,8 @@ with st.sidebar:
 
 r = calcola(ral, mens, reg, com, extra_ded_annue=extra * mens)
 try:
-    dark = st.context.theme.type == "dark"
+    tema = st.context.theme.type
+    dark = {"dark": True, "light": False}.get(tema)
 except Exception:  # versioni di Streamlit senza st.context.theme
-    dark = False
+    dark = None
 st.html(report_html(r, reg, com, netto_cedolino or None, dark))

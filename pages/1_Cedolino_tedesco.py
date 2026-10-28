@@ -60,9 +60,10 @@ def form_manuale() -> dict:
 
 def mostra(d: dict) -> None:
     try:
-        dark = st.context.theme.type == "dark"
+        tema = st.context.theme.type
+        dark = {"dark": True, "light": False}.get(tema)
     except Exception:  # versioni di Streamlit senza st.context.theme
-        dark = False
+        dark = None
     st.html(report_html(d, dark))
 
 

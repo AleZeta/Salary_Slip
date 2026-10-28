@@ -18,9 +18,13 @@ CSS = """
 .ps{--bg:#ffffff;--ink:#1a1a1a;--muted:#5b5b5b;--card:#f3f3f3;--line:rgba(127,127,127,.25);
   --gross:#ff5a36;--gross-soft:#f8ab87;--gross-line:#ff7a58;--ded:#7c35f5;--ded-soft:#e3d6fd;--ded-line:#9a63f7;
   --net:#2aa878;--ok:#1f8a5f;--warn:#c2410c;--info-y:#f6c64f;--info-b:#2f62e6;--onstrong:#ffffff;
-  font-family:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.5;color:var(--ink)}
+  font-family:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.5;color:var(--ink);
+  background:var(--bg);padding:22px;border-radius:24px}
 .ps.dark{--bg:#16151a;--ink:#f1f0f4;--muted:#b3b0bd;--card:#24222b;--line:rgba(200,200,210,.2);
   --gross-soft:#5a2f22;--ded-soft:#34275a;--ded-line:#a57bf8;--ok:#4ade80;--warn:#fb923c}
+@media (prefers-color-scheme: dark){
+  .ps:not(.light){--bg:#16151a;--ink:#f1f0f4;--muted:#b3b0bd;--card:#24222b;--line:rgba(200,200,210,.2);
+    --gross-soft:#5a2f22;--ded-soft:#34275a;--ded-line:#a57bf8;--ok:#4ade80;--warn:#fb923c}}
 .ps *{box-sizing:border-box}
 .ps h2,.ps h3,.ps .big,.ps .ttl,.ps .n{font-family:"Barlow Condensed","Arial Narrow",Arial,sans-serif}
 .ps .rhead h2{font-size:clamp(30px,5vw,44px);line-height:1.05;margin:0;font-weight:800;color:var(--ink)}
@@ -104,6 +108,11 @@ def pct(v: float, d: int = 2) -> str:
     return f"{v:.{d}f}".replace(".", ",") + "%"
 
 
+def _classe_tema(dark: Optional[bool]) -> str:
+    """True = scuro, False = chiaro, None = segue le preferenze del sistema."""
+    return "" if dark is None else (" dark" if dark else " light")
+
+
 def _item(n: str, v: str, body: str, de: str = "", zero: bool = False, short: bool = False, cls: str = "") -> str:
     return (f'<details class="item{" zero" if zero else ""}{" " + cls if cls else ""}"><summary>'
             f'<div class="n">{_e(n)}</div>' + (f'<div class="de">{_e(de)}</div>' if de else "") +
@@ -117,12 +126,12 @@ def _check(actual: float, atteso: float) -> str:
     return f'<p class="chk-warn">⚠ Non torna: atteso {_e(eur(atteso))}</p>'
 
 
-def report_html(d: Dict, dark: bool = False) -> str:
+def report_html(d: Dict, dark: Optional[bool] = None) -> str:
     sorgente = {"datev": "letta da PDF DATEV", "manual": "inserita a mano"}.get(d.get("source"), "")
     periodo = f"{MESI[d['month'] - 1].capitalize()} {d.get('year', '')}" if d.get("month") else str(d.get("year", ""))
     meta = "".join(f"<span>{_e(k)} <b>{_e(v)}</b></span>" for k, v in
                    (("Datore di lavoro", d.get("employer")), ("Pagata il", d.get("payDate")), ("Assunto dal", d.get("startDate"))) if v)
-    h = [f'<style>{CSS}</style><div class="ps{" dark" if dark else ""}">',
+    h = [f'<style>{CSS}</style><div class="ps{_classe_tema(dark)}">',
          f'<div class="rhead"><h2>{_e(periodo)}<span class="src">{_e(sorgente)}</span></h2><div class="meta">{meta}</div></div>']
     if d["warnings"]:
         h.append('<div class="notice">Alcuni totali non tornano esattamente: controlla i valori con il cedolino.</div>')
