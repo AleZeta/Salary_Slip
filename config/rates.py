@@ -9,10 +9,12 @@ DE_RATES = {
         "pv_senza_figli": 0.006,
         "tetto_rv_av": 8_450.0,   # Beitragsbemessungsgrenze mensile RV/AV
         "tetto_kv_pv": 5_812.5,   # Beitragsbemessungsgrenze mensile KV/PV
+        "bav_esente_tasse": 0.08,        # % del tetto RV/AV annuo: versamenti bAV esenti da tasse
+        "bav_esente_contributi": 0.04,   # idem per i contributi sociali
     },
     2027: {  # bozza
         "rv": 0.093, "av": 0.013, "pv": 0.018, "pv_senza_figli": 0.006,
-        "tetto_rv_av": 8_850.0, "tetto_kv_pv": 6_375.0,
+        "tetto_rv_av": 8_850.0, "tetto_kv_pv": 6_375.0, "bav_esente_tasse": 0.08, "bav_esente_contributi": 0.04,
     },
 }
 

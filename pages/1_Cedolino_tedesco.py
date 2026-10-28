@@ -91,8 +91,13 @@ with tab_calc:
                            help="14,6% + contributo aggiuntivo della tua cassa (Zusatzbeitrag). Sul cedolino: KK %.")
     figli = c[2].checkbox("Ho figli", help="Senza figli l'assicurazione non autosufficienza ha un supplemento dello 0,6%.")
     chiesa = c[3].selectbox("Kirchensteuer", [0, 8, 9], format_func=lambda v: "Nessuna" if v == 0 else f"{v}% (Bayern/BW)" if v == 8 else f"{v}% (altrove)")
+    c = st.columns(2)
+    bav = c[0].number_input("Pensione aziendale bAV: il tuo versamento (€/mese)", 0.0, 2_000.0, 0.0, step=10.0,
+                            help="Entgeltumwandlung, es. in una Direktversicherung. Esente da tasse fino all'8% e da contributi fino al 4% del tetto RV/AV.")
+    dat = c[1].number_input("Contributo del datore (% del tuo versamento)", 0.0, 100.0, 15.0, step=5.0,
+                            help="Per legge almeno il 15% se il datore risparmia contributi sociali; molte aziende danno di più.")
     st.caption("Calcolo annuale con la tariffa § 32a EStG: il Lohnsteuer mensile reale può differire di qualche euro.")
-    mostra(normalizza(de_calc.calcola(ral, kk, figli, chiesa)))
+    mostra(normalizza(de_calc.calcola(ral, kk, figli, chiesa, bav_mensile=bav, bav_datore_pct=dat)))
 with tab_man:
     manuale = form_manuale()
     if manuale and dati is None:

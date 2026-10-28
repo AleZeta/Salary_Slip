@@ -78,3 +78,23 @@ def test_calcolo_da_stipendio_coincide_col_cedolino():
     assert einkommensteuer_32a(12_000) == 0
     assert normalizza(d)["warnings"] == []
     assert calcola(0)["payout"] == 0
+
+
+def test_calcolo_con_bav_coincide_col_cedolino_di_ottobre():
+    from src.de_calc import calcola
+    d = calcola(75_000, 17.29, False, 0, 2026, bav_mensile=156.15, bav_datore_pct=30)
+    assert (d["taxGross"], d["wageTax"], d["rv"], d["av"], d["kv"], d["pv"]) == (6093.85, 1108.58, 566.73, 79.22, 502.49, 139.50)
+    assert d["svTotal"] == 1287.94
+    assert d["bav"]["total"] == 203.0 and 85 < d["bav"]["netCost"] < 87
+    assert normalizza(d)["warnings"] == []
+
+
+def test_dati_bav_e_lordo_con_flag_n():
+    from src.de_payslip import dati_bav
+    d = normalizza({"payments": [
+        {"label": "Gehalt", "amount": 6250.0, "tax": "L", "sv": "L", "gb": "J"},
+        {"label": "Gehaltsverzicht, mtl.", "amount": -156.15, "tax": "L", "sv": "L", "gb": "N"},
+        {"label": "Betr.AV,Geh.vz.lfd,§3Nr.63EStG", "amount": 156.15, "tax": "F", "sv": "F", "gb": "N"},
+        {"label": "bAV AG-Pflichtz,lfd", "amount": 46.85, "tax": "F", "sv": "F", "gb": "N"}]})
+    assert d["totalGross"] == 6250.0 and d["taxGross"] == 6093.85
+    assert dati_bav(d) == {"conversion": 156.15, "employer": 46.85, "total": 203.0}

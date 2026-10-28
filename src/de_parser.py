@@ -231,7 +231,7 @@ def parse(pages: List[List[dict]]) -> Dict:
     # controlli di coerenza
     if out["totalGross"] is None or out["payout"] is None:
         out["warnings"].append("missing_totals")
-    somma = sum(p["amount"] or 0 for p in out["payments"])
+    somma = sum(p["amount"] or 0 for p in out["payments"] if p["gb"] != "N")  # N = non fa parte del lordo totale
     if out["totalGross"] is not None and abs(somma - out["totalGross"]) > 0.02:
         out["warnings"].append("gross_mismatch")
     netto = (out["totalGross"] or 0) - (out["taxTotal"] or 0) - (out["svTotal"] or 0)

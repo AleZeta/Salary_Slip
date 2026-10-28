@@ -11,6 +11,14 @@ CAMPI_NUM = ["totalGross", "taxGross", "wageTax", "church", "soli", "kvGross", "
 
 # Classificazione delle voci lorde: (regex, chiave, titolo, spiegazione)
 VOCI_LORDE = [
+    (r"ag-?pflichtz|arbeitgeberzuschuss|pens\.?sch\.?empl|empl\.?\s*sub", "Contributo del datore alla pensione",
+     "Il contributo che il datore aggiunge al tuo versamento nella pensione aziendale (bAV). Non fa parte del lordo e non paghi tasse né contributi."),
+    (r"gehaltsverzicht|salary cut|geh\.?\s*vz", "Riduzione stipendio (conversione bAV)",
+     "Entgeltumwandlung: la parte del lordo che rinunci a ricevere in busta e che va nella pensione aziendale. Riduce l'imponibile fiscale e in parte quello contributivo."),
+    (r"betr\.?\s*av|comp\.?\s*pens\.?\s*sal|§\s*3\s*nr", "Versamento nella pensione aziendale",
+     "Il tuo versamento nella pensione aziendale (§ 3 Nr. 63 EStG), esente da tasse e contributi entro i limiti di legge."),
+    (r"wellpass|egym|fitness|palestra|gym", "Wellpass (palestra)",
+     "Benefit in natura (Sachbezug) per la palestra: esente da tasse e contributi, ma lo stesso importo viene tolto dopo il netto, più la tua quota."),
     (r"entgeltumwandlung|\bbav\b|direktversicherung|pensionskasse|pensionsfonds|altersvorsorge|deferred", "Pensione aziendale (conversione)",
      "Entgeltumwandlung: parte del lordo versata nella pensione aziendale, esente da tasse e contributi entro i limiti di legge."),
     (r"urlaubsgeld|holiday pay", "Indennità ferie", "Urlaubsgeld: pagamento extra legato alle ferie, di solito tassato come una tantum."),
@@ -26,6 +34,9 @@ VOCI_LORDE = [
     (r"gehalt|salary|grundlohn|lohn|stipendio", "Stipendio base", "Il tuo stipendio mensile regolare."),
 ]
 VOCI_NETTO = [
+    (r"eigenanteil.*(wellpass|egym)|(wellpass|egym).*eigenanteil", "Wellpass: quota tua", "La parte dell'abbonamento palestra che paghi tu, tolta dal netto."),
+    (r"wellpass|egym", "Wellpass: benefit", "Compensa il benefit in natura mostrato nel lordo: l'effetto sul netto è nullo."),
+    (r"gehaltsverzicht|bav|entgeltumw", "Versamento pensione aziendale", "Il tuo versamento nella bAV, già escluso da tasse e contributi nel lordo e qui tolto dal netto."),
     (r"lunch|kantine|essen|mensa|canteen|meal", "Mensa", "La tua quota per i pasti in mensa o i buoni pasto."),
     (r"rad|bike|fahrrad|leasing", "Bici aziendale", "Rata del leasing della bici (JobRad) trattenuta dal netto."),
     (r"vorschuss|advance|abschlag", "Anticipo", "Restituzione di un anticipo già ricevuto."),
@@ -64,14 +75,15 @@ def normalizza(d: Dict) -> Dict:
     for k in CAMPI_NUM:
         d[k] = n(d.get(k))
     d["payments"] = [{"code": p.get("code", ""), "label": p.get("label", ""), "amount": n(p.get("amount")) or 0.0,
-                      "tax": (p.get("tax") or "").upper(), "sv": (p.get("sv") or "").upper()} for p in d.get("payments") or []]
+                      "tax": (p.get("tax") or "").upper(), "sv": (p.get("sv") or "").upper(),
+                      "gb": (p.get("gb") or "").upper()} for p in d.get("payments") or []]
     d["netItems"] = [{"code": p.get("code", ""), "label": p.get("label", ""), "amount": n(p.get("amount")) or 0.0}
                      for p in d.get("netItems") or []]
     for k in ("wageTax", "church", "soli", "kv", "rv", "av", "pv"):
         if d[k] is None:
             d[k] = 0.0
     if d["totalGross"] is None:
-        d["totalGross"] = sum(p["amount"] for p in d["payments"])
+        d["totalGross"] = sum(p["amount"] for p in d["payments"] if p["gb"] != "N")
     if d["taxTotal"] is None:
         d["taxTotal"] = d["wageTax"] + d["church"] + d["soli"]
     if d["svTotal"] is None:
@@ -159,3 +171,14 @@ def note_tetto(d: Dict) -> List[str]:
 
 def tetti(anno: int) -> Dict:
     return DE_RATES.get(anno, DE_RATES[max(DE_RATES)])
+
+
+def dati_bav(d: Dict) -> Optional[Dict]:
+    """Versamenti nella pensione aziendale: dal dict `bav` (calcolo) o dalle righe del cedolino (flag GB = N)."""
+    if d.get("bav"):
+        return d["bav"]
+    conv = -sum(p["amount"] for p in d["payments"] if p["amount"] < 0 and re.search(r"gehaltsverzicht|salary cut|geh\.?\s*vz|entgeltumw", p["label"].lower()))
+    dat = sum(p["amount"] for p in d["payments"] if p["amount"] > 0 and re.search(r"ag-?pflichtz|arbeitgeberzuschuss|pens\.?sch\.?empl|empl\.?\s*sub", p["label"].lower()))
+    if conv <= 0 and dat <= 0:
+        return None
+    return {"conversion": conv, "employer": dat, "total": conv + dat}

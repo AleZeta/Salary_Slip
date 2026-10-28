@@ -7,8 +7,8 @@ def _e(s) -> str:
     return escape(str(s))
 from typing import Dict, List, Optional
 
-from src.de_payslip import (CLASSI, aliquota_pv, classifica_voce_lorda, classifica_voce_netto, note_tetto, testo_flag,
-                            tipo_pv, verifica_contributi)
+from src.de_payslip import (CLASSI, aliquota_pv, classifica_voce_lorda, classifica_voce_netto, dati_bav, note_tetto,
+                            testo_flag, tipo_pv, verifica_contributi)
 
 MESI = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre",
         "novembre", "dicembre"]
@@ -126,6 +126,49 @@ def _check(actual: float, atteso: float) -> str:
     return f'<p class="chk-warn">⚠ Non torna: atteso {_e(eur(atteso))}</p>'
 
 
+def _stima_risparmio(d: Dict, b: Dict) -> Optional[float]:
+    """Stima il risparmio di tasse e contributi della bAV rifacendo il calcolo annuale con e senza versamento."""
+    try:
+        from src.de_calc import calcola
+        kk = d.get("kvRateTotal") or 17.5
+        stip = (d["taxGross"] + b["conversion"]) * 12
+        pct_d = b["employer"] / b["conversion"] * 100 if b["conversion"] else 0.0
+        con = calcola(stip, kk, not d.get("childlessFlag", True), 0.0, d.get("year") or 2026, b["conversion"], pct_d)
+        return con["bav"]["saving"]
+    except Exception:  # dati insufficienti per la stima
+        return None
+
+
+def _sezione_bav(d: Dict) -> str:
+    """Pensione aziendale (bAV): versamenti, contributo del datore e costo reale per il dipendente."""
+    b = dati_bav(d)
+    if not b:
+        return ""
+    risparmio = b.get("saving") if "saving" in b else _stima_risparmio(d, b)
+    stima = "saving" not in b
+    cards = [
+        _item("Il tuo versamento", eur(b["conversion"]) + " / mese", (
+            "<p><i>Entgeltumwandlung</i>: rinunci a una parte del lordo e quel denaro va nella pensione aziendale. "
+            "Sul cedolino compare come riduzione dello stipendio e come versamento esente (§ 3 Nr. 63 EStG).</p>"
+            "<p>Su questa parte non paghi imposte, e in parte nemmeno contributi sociali (limiti: 8% del tetto RV/AV per le tasse, 4% per i contributi).</p>"),
+              de="Gehaltsverzicht", cls="b", short=True),
+        _item("Contributo del datore", eur(b["employer"]) + " / mese", (
+            "<p>Il datore aggiunge un suo contributo (per legge almeno il 15% di ciò che converti, se risparmia contributi sociali). "
+            "Non è nel lordo e non paghi imposte su di esso.</p>"), de="AG-Zuschuss", cls="b", short=True),
+        _item("Totale in pensione", eur(b["total"]) + " / mese", "<p>La somma di versamento tuo e contributo del datore: è ciò che viene investito ogni mese.</p>",
+              de="Totale versato", cls="b", short=True)]
+    if risparmio is not None:
+        costo = b["conversion"] - risparmio
+        cards.append(_item("Costo reale per te", eur(costo) + " / mese", (
+            f"<p>Il versamento di {_e(eur(b['conversion']))} ti riduce il netto di soli circa <b>{_e(eur(costo))}</b>, "
+            f"perché risparmi circa {_e(eur(risparmio))} tra imposte e contributi{' (stima)' if stima else ''}.</p>"
+            "<p>Contropartita: minori contributi pensionistici pubblici e tassazione della rendita o del capitale al pensionamento.</p>"),
+            de="Dopo il risparmio fiscale", cls="b", short=True))
+    return (f'<section class="section"><h3>Pensione aziendale (bAV)</h3><p class="lead">Una parte del lordo va direttamente in una pensione aziendale: '
+            f'su quel versamento non paghi imposte, e il datore aggiunge il suo contributo.</p><div class="info" style="margin-top:14px">'
+            + "".join(cards) + "</div></section>")
+
+
 def report_html(d: Dict, dark: Optional[bool] = None) -> str:
     sorgente = {"datev": "letta da PDF DATEV", "manual": "inserita a mano", "calc": "calcolo da stipendio annuo · 2026"}.get(d.get("source"), "")
     periodo = f"{MESI[d['month'] - 1].capitalize()} {d.get('year', '')}" if d.get("month") else str(d.get("year", ""))
@@ -139,7 +182,7 @@ def report_html(d: Dict, dark: Optional[bool] = None) -> str:
     # --- lordo
     h.append(f'<div class="top"><section class="panel gross"><div class="head"><div class="ttl">STIPENDIO LORDO</div>'
              f'<div class="sub">Gesamt-Brutto</div><div class="big">{_e(eur(d["totalGross"]))}</div></div><div class="ofwhich">di cui</div>')
-    for p in d["payments"]:
+    for p in (p for p in d["payments"] if p.get("gb") != "N"):  # N = non fa parte del lordo totale
         titolo, spiega = classifica_voce_lorda(p["label"])
         fl = testo_flag(p["tax"], p["sv"])
         h.append(_item(titolo, eur(p["amount"]), f"<p>{_e(spiega)}</p>" + (f"<p>{_e(fl)}</p>" if fl else ""),
@@ -202,6 +245,8 @@ def report_html(d: Dict, dark: Optional[bool] = None) -> str:
              + ("<p>Le voci dopo il netto (per esempio mensa, bici aziendale, anticipi) vengono tolte o aggiunte dopo tasse e contributi.</p>" if d["netItems"] else "")
              + "</section>")
 
+    h.append(_sezione_bav(d))
+
     # --- barra di ripartizione
     if d["totalGross"] > 0:
         neg = -sum(p["amount"] for p in d["netItems"] if p["amount"] < 0)
@@ -234,7 +279,7 @@ def report_html(d: Dict, dark: Optional[bool] = None) -> str:
     # --- da inizio anno
     y = d.get("ytd") or {}
     if y:
-        mese = {"gross": d["totalGross"], "taxGross": d["taxGross"], "taxFree": sum(p["amount"] for p in d["payments"] if p["tax"] == "F"),
+        mese = {"gross": d["totalGross"], "taxGross": d["taxGross"], "taxFree": sum(p["amount"] for p in d["payments"] if p["tax"] == "F" and p.get("gb") != "N"),
                 "wageTax": d["wageTax"], "soli": d["soli"], "church": d["church"], "svGross": d.get("rvGross"),
                 "kv": d["kv"], "rv": d["rv"], "av": d["av"], "pv": d["pv"]}
         nomi = {"gross": ("Lordo totale", "Gesamt-Brutto"), "taxGross": ("Lordo imponibile", "Steuer-Brutto"),
