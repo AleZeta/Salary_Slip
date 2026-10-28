@@ -7,7 +7,8 @@ def _e(s) -> str:
     return escape(str(s))
 from typing import Dict, List, Optional
 
-from src.de_payslip import (CLASSI, aliquota_pv, classifica_voce_lorda, classifica_voce_netto, dati_bav, note_tetto,
+from src.i18n import fmt_eur, fmt_pct, mesi
+from src.de_payslip import (aliquota_pv, classi, classifica_voce_lorda, classifica_voce_netto, dati_bav, note_tetto,
                             testo_flag, tipo_pv, verifica_contributi)
 
 MESI = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre",
@@ -96,16 +97,26 @@ GLOSSARIO = [
     ("§ 108 GewO", "È il prospetto paga obbligatorio per legge: conservalo."),
 ]
 
+GLOSSARIO_EN = [
+    ("St / SV: L", "Regular item (laufender Bezug), taxed and subject to contributions."),
+    ("St / SV: F", "Item exempt from tax and contributions (frei)."),
+    ("St / SV: S · E", "One-off payment (sonstiger Bezug / Einmalbezug), e.g. a bonus."),
+    ("GB: J", "The item is part of total gross pay."),
+    ("Z", "Surcharge for people without children in long-term care insurance."),
+    ("KK %", "Total rate of the health insurance fund, including the additional contribution."),
+    ("PGRS 101", "Person group: regular employee subject to contributions."),
+    ("BGRS 1111", "Contributions to all four social insurances."),
+    ("St.-Tg. / SV-Tg.", "Days counted for tax and contributions in the month."),
+    ("§ 108 GewO", "This is the payslip required by law: keep it."),
+]
 
-def eur(v: Optional[float]) -> str:
-    if v is None:
-        return "–"
-    testo = f"{abs(v):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    return ("− € " if v < 0 else "€ ") + testo
+
+def eur(v: Optional[float], lang: str = "it") -> str:
+    return fmt_eur(v, lang)
 
 
-def pct(v: float, d: int = 2) -> str:
-    return f"{v:.{d}f}".replace(".", ",") + "%"
+def pct(v: float, d: int = 2, lang: str = "it") -> str:
+    return fmt_pct(v, d, lang)
 
 
 def _classe_tema(dark: Optional[bool]) -> str:
@@ -113,16 +124,18 @@ def _classe_tema(dark: Optional[bool]) -> str:
     return "" if dark is None else (" dark" if dark else " light")
 
 
-def _item(n: str, v: str, body: str, de: str = "", zero: bool = False, short: bool = False, cls: str = "") -> str:
+def _item(n: str, v: str, body: str, de: str = "", zero: bool = False, short: bool = False, cls: str = "", lang: str = "it") -> str:
     return (f'<details class="item{" zero" if zero else ""}{" " + cls if cls else ""}"><summary>'
             f'<div class="n">{_e(n)}</div>' + (f'<div class="de">{_e(de)}</div>' if de else "") +
-            f'<div class="v">{_e(v)}</div><div class="hint">{"Tocca" if short else "Tocca per i dettagli"}</div></summary>'
+            f'<div class="v">{_e(v)}</div><div class="hint">{("Tap" if short else "Tap for details") if lang == "en" else ("Tocca" if short else "Tocca per i dettagli")}</div></summary>'
             f'<div class="body">{body}</div></details>')
 
 
-def _check(actual: float, atteso: float) -> str:
+def _check(actual: float, atteso: float, lang: str = "it") -> str:
     if abs(actual - atteso) <= 0.06:
-        return '<p class="chk-ok">✓ Il calcolo torna</p>'
+        return '<p class="chk-ok">✓ The calculation checks out</p>' if lang == "en" else '<p class="chk-ok">✓ Il calcolo torna</p>'
+    if lang == "en":
+        return f'<p class="chk-warn">⚠ Does not add up: expected {_e(eur(atteso, lang))}</p>'
     return f'<p class="chk-warn">⚠ Non torna: atteso {_e(eur(atteso))}</p>'
 
 
@@ -139,141 +152,195 @@ def _stima_risparmio(d: Dict, b: Dict) -> Optional[float]:
         return None
 
 
-def _sezione_bav(d: Dict) -> str:
+def _sezione_bav(d: Dict, lang: str = "it") -> str:
     """Pensione aziendale (bAV): versamenti, contributo del datore e costo reale per il dipendente."""
     b = dati_bav(d)
     if not b:
         return ""
+    tr = lambda it, en: en if lang == "en" else it
+    eur_ = lambda v: eur(v, lang)
+    mese = tr(" / mese", " / month")
     risparmio = b.get("saving") if "saving" in b else _stima_risparmio(d, b)
     stima = "saving" not in b
     cards = [
-        _item("Il tuo versamento", eur(b["conversion"]) + " / mese", (
+        _item(tr("Il tuo versamento", "Your contribution"), eur_(b["conversion"]) + mese, tr(
             "<p><i>Entgeltumwandlung</i>: rinunci a una parte del lordo e quel denaro va nella pensione aziendale. "
             "Sul cedolino compare come riduzione dello stipendio e come versamento esente (§ 3 Nr. 63 EStG).</p>"
-            "<p>Su questa parte non paghi imposte, e in parte nemmeno contributi sociali (limiti: 8% del tetto RV/AV per le tasse, 4% per i contributi).</p>"),
-              de="Gehaltsverzicht", cls="b", short=True),
-        _item("Contributo del datore", eur(b["employer"]) + " / mese", (
+            "<p>Su questa parte non paghi imposte, e in parte nemmeno contributi sociali (limiti: 8% del tetto RV/AV per le tasse, 4% per i contributi).</p>",
+            "<p><i>Entgeltumwandlung</i>: you give up part of your gross pay and that money goes into the occupational pension. "
+            "On the payslip it shows up as a salary reduction and as an exempt payment (§ 3 Nr. 63 EStG).</p>"
+            "<p>You pay no tax on this part, and partly no social contributions either (limits: 8% of the RV/AV ceiling for tax, 4% for contributions).</p>"),
+              de="Gehaltsverzicht", cls="b", short=True, lang=lang),
+        _item(tr("Contributo del datore", "Employer contribution"), eur_(b["employer"]) + mese, tr(
             "<p>Il datore aggiunge un suo contributo (per legge almeno il 15% di ciò che converti, se risparmia contributi sociali). "
-            "Non è nel lordo e non paghi imposte su di esso.</p>"), de="AG-Zuschuss", cls="b", short=True),
-        _item("Totale in pensione", eur(b["total"]) + " / mese", "<p>La somma di versamento tuo e contributo del datore: è ciò che viene investito ogni mese.</p>",
-              de="Totale versato", cls="b", short=True)]
+            "Non è nel lordo e non paghi imposte su di esso.</p>",
+            "<p>Your employer adds its own contribution (by law at least 15% of what you convert, if it saves social contributions). "
+            "It is not in your gross pay and you pay no tax on it.</p>"), de="AG-Zuschuss", cls="b", short=True, lang=lang),
+        _item(tr("Totale in pensione", "Total into pension"), eur_(b["total"]) + mese, tr(
+            "<p>La somma di versamento tuo e contributo del datore: è ciò che viene investito ogni mese.</p>",
+            "<p>The sum of your contribution and the employer contribution: this is what gets invested every month.</p>"),
+              de=tr("Totale versato", "Total paid in"), cls="b", short=True, lang=lang)]
     if risparmio is not None:
         costo = b["conversion"] - risparmio
-        cards.append(_item("Costo reale per te", eur(costo) + " / mese", (
-            f"<p>Il versamento di {_e(eur(b['conversion']))} ti riduce il netto di soli circa <b>{_e(eur(costo))}</b>, "
-            f"perché risparmi circa {_e(eur(risparmio))} tra imposte e contributi{' (stima)' if stima else ''}.</p>"
-            "<p>Contropartita: minori contributi pensionistici pubblici e tassazione della rendita o del capitale al pensionamento.</p>"),
-            de="Dopo il risparmio fiscale", cls="b", short=True))
-    return (f'<section class="section"><h3>Pensione aziendale (bAV)</h3><p class="lead">Una parte del lordo va direttamente in una pensione aziendale: '
-            f'su quel versamento non paghi imposte, e il datore aggiunge il suo contributo.</p><div class="info" style="margin-top:14px">'
-            + "".join(cards) + "</div></section>")
+        stima_t = tr(" (stima)", " (estimate)") if stima else ""
+        cards.append(_item(tr("Costo reale per te", "Real cost to you"), eur_(costo) + mese, tr(
+            f"<p>Il versamento di {_e(eur_(b['conversion']))} ti riduce il netto di soli circa <b>{_e(eur_(costo))}</b>, "
+            f"perché risparmi circa {_e(eur_(risparmio))} tra imposte e contributi{stima_t}.</p>"
+            "<p>Contropartita: minori contributi pensionistici pubblici e tassazione della rendita o del capitale al pensionamento.</p>",
+            f"<p>The {_e(eur_(b['conversion']))} contribution lowers your net pay by only about <b>{_e(eur_(costo))}</b>, "
+            f"because you save about {_e(eur_(risparmio))} in tax and contributions{stima_t}.</p>"
+            "<p>Trade-off: lower public pension contributions and taxation of the annuity or lump sum at retirement.</p>"),
+            de=tr("Dopo il risparmio fiscale", "After the tax saving"), cls="b", short=True, lang=lang))
+    return (f'<section class="section"><h3>{tr("Pensione aziendale (bAV)", "Occupational pension (bAV)")}</h3><p class="lead">'
+            + tr("Una parte del lordo va direttamente in una pensione aziendale: su quel versamento non paghi imposte, e il datore aggiunge il suo contributo.",
+                 "Part of your gross pay goes straight into an occupational pension: you pay no tax on that contribution, and your employer adds its own.")
+            + '</p><div class="info" style="margin-top:14px">' + "".join(cards) + "</div></section>")
 
 
-def report_html(d: Dict, dark: Optional[bool] = None) -> str:
-    sorgente = {"datev": "letta da PDF DATEV", "manual": "inserita a mano", "calc": "calcolo da stipendio annuo · 2026"}.get(d.get("source"), "")
-    periodo = f"{MESI[d['month'] - 1].capitalize()} {d.get('year', '')}" if d.get("month") else str(d.get("year", ""))
+def report_html(d: Dict, dark: Optional[bool] = None, lang: str = "it") -> str:
+    tr = lambda it, en: en if lang == "en" else it
+    eur_ = lambda v: eur(v, lang)
+    pct_ = lambda v, dec=2: pct(v, dec, lang)
+    sorgente = {"datev": tr("letta da PDF DATEV", "read from DATEV PDF"), "manual": tr("inserita a mano", "entered manually"),
+                "calc": tr("calcolo da stipendio annuo · 2026", "calculated from annual salary · 2026")}.get(d.get("source"), "")
+    periodo = f"{mesi(lang)[d['month'] - 1].capitalize()} {d.get('year', '')}" if d.get("month") else str(d.get("year", ""))
     meta = "".join(f"<span>{_e(k)} <b>{_e(v)}</b></span>" for k, v in
-                   (("Datore di lavoro", d.get("employer")), ("Pagata il", d.get("payDate")), ("Assunto dal", d.get("startDate"))) if v)
+                   ((tr("Datore di lavoro", "Employer"), d.get("employer")), (tr("Pagata il", "Paid on"), d.get("payDate")),
+                    (tr("Assunto dal", "Hired on"), d.get("startDate"))) if v)
     h = [f'<style>{CSS}</style><div class="ps{_classe_tema(dark)}">',
          f'<div class="rhead"><h2>{_e(periodo)}<span class="src">{_e(sorgente)}</span></h2><div class="meta">{meta}</div></div>']
     if d["warnings"]:
-        h.append('<div class="notice">Alcuni totali non tornano esattamente: controlla i valori con il cedolino.</div>')
+        h.append('<div class="notice">' + tr("Alcuni totali non tornano esattamente: controlla i valori con il cedolino.",
+                                             "Some totals do not add up exactly: check the values against your payslip.") + "</div>")
+    di = tr("di cui", "of which")
 
     # --- lordo
-    h.append(f'<div class="top"><section class="panel gross"><div class="head"><div class="ttl">STIPENDIO LORDO</div>'
-             f'<div class="sub">Gesamt-Brutto</div><div class="big">{_e(eur(d["totalGross"]))}</div></div><div class="ofwhich">di cui</div>')
+    h.append(f'<div class="top"><section class="panel gross"><div class="head"><div class="ttl">{tr("STIPENDIO LORDO", "GROSS SALARY")}</div>'
+             f'<div class="sub">Gesamt-Brutto</div><div class="big">{_e(eur_(d["totalGross"]))}</div></div><div class="ofwhich">{di}</div>')
     for p in (p for p in d["payments"] if p.get("gb") != "N"):  # N = non fa parte del lordo totale
-        titolo, spiega = classifica_voce_lorda(p["label"])
-        fl = testo_flag(p["tax"], p["sv"])
-        h.append(_item(titolo, eur(p["amount"]), f"<p>{_e(spiega)}</p>" + (f"<p>{_e(fl)}</p>" if fl else ""),
-                       de=f'{p["code"]} {p["label"]}'.strip()))
+        titolo, spiega = classifica_voce_lorda(p["label"], lang)
+        fl = testo_flag(p["tax"], p["sv"], lang=lang)
+        h.append(_item(titolo, eur_(p["amount"]), f"<p>{_e(spiega)}</p>" + (f"<p>{_e(fl)}</p>" if fl else ""),
+                       de=f'{p["code"]} {p["label"]}'.strip(), lang=lang))
     h.append("</section>")
 
     # --- tasse e contributi
     ded = d["taxTotal"] + d["svTotal"]
-    h.append(f'<section class="panel ded"><div class="head"><div class="ttl">TASSE E CONTRIBUTI</div>'
-             f'<div class="sub">Steuer- und SV-Abzüge</div><div class="big">− {_e(eur(ded))}</div></div><div class="ofwhich">di cui</div>')
-    eff = pct(d["wageTax"] / d["taxGross"] * 100, 1) if d["taxGross"] else "–"
+    h.append(f'<section class="panel ded"><div class="head"><div class="ttl">{tr("TASSE E CONTRIBUTI", "TAXES AND CONTRIBUTIONS")}</div>'
+             f'<div class="sub">Steuer- und SV-Abzüge</div><div class="big">− {_e(eur_(ded))}</div></div><div class="ofwhich">{di}</div>')
+    eff = pct_(d["wageTax"] / d["taxGross"] * 100, 1) if d["taxGross"] else "–"
     classe = d.get("taxClass")
-    h.append(_item("Imposta sul reddito", eur(d["wageTax"]), (
-        f"<p>Imposta trattenuta ogni mese e versata al Finanzamt. Calcolata sul lordo imponibile di {_e(eur(d['taxGross']))} "
+    h.append(_item(tr("Imposta sul reddito", "Income tax"), eur_(d["wageTax"]), tr(
+        f"<p>Imposta trattenuta ogni mese e versata al Finanzamt. Calcolata sul lordo imponibile di {_e(eur_(d['taxGross']))} "
         f"con la classe d'imposta {_e(classe or '–')}. Aliquota effettiva su questo mese: {_e(eff)}.</p>"
-        "<p>È un acconto: con la dichiarazione dei redditi (Steuererklärung) le spese di lavoro possono farti recuperare una parte.</p>"),
-        de="Lohnsteuer"))
+        "<p>È un acconto: con la dichiarazione dei redditi (Steuererklärung) le spese di lavoro possono farti recuperare una parte.</p>",
+        f"<p>Tax withheld every month and paid to the Finanzamt. Calculated on taxable gross pay of {_e(eur_(d['taxGross']))} "
+        f"with tax class {_e(classe or '–')}. Effective rate for this month: {_e(eff)}.</p>"
+        "<p>It is an advance payment: with your tax return (Steuererklärung), work-related expenses may let you recover part of it.</p>"),
+        de="Lohnsteuer", lang=lang))
     ver = verifica_contributi(d)
     kk = d.get("kvRateTotal")
     if kk:
-        kv_body = (f"<p>Assicurazione sanitaria pubblica. Aliquota totale {pct(kk)} (14,6% generale + contributo aggiuntivo della cassa), "
-                   f"divisa a metà: paghi tu {pct(kk / 2, 3)}.</p>")
+        kv_body = tr(f"<p>Assicurazione sanitaria pubblica. Aliquota totale {pct_(kk)} (14,6% generale + contributo aggiuntivo della cassa), "
+                     f"divisa a metà: paghi tu {pct_(kk / 2, 3)}.</p>",
+                     f"<p>Public health insurance. Total rate {pct_(kk)} (14.6% general + the fund's additional contribution), "
+                     f"split in half: you pay {pct_(kk / 2, 3)}.</p>")
         if "kv" in ver:
             r = ver["kv"]
-            kv_body += f'<p><span class="calc">{_e(eur(r["base"]))} × {_e(pct(r["aliquota"], 3))} = {_e(eur(r["atteso"]))}</span></p>' + _check(d["kv"], r["atteso"])
+            kv_body += f'<p><span class="calc">{_e(eur_(r["base"]))} × {_e(pct_(r["aliquota"], 3))} = {_e(eur_(r["atteso"]))}</span></p>' + _check(d["kv"], r["atteso"], lang)
     else:
-        kv_body = "<p>Assicurazione sanitaria pubblica: l'aliquota totale (14,6% + contributo aggiuntivo) è divisa a metà con il datore di lavoro.</p>"
-    cap = "".join(f"<p>{_e(n)}</p>" for n in note_tetto(d))
-    h.append(_item("Assicurazione sanitaria", eur(d["kv"]), kv_body + cap, de="KV-Beitrag" + (f" · {d['insurer']}" if d.get("insurer") else "")))
-    rv_body = "<p>Contributo alla pensione pubblica (Deutsche Rentenversicherung). Aliquota totale 18,6%, divisa a metà: 9,3% a te e 9,3% al datore di lavoro.</p>"
+        kv_body = tr("<p>Assicurazione sanitaria pubblica: l'aliquota totale (14,6% + contributo aggiuntivo) è divisa a metà con il datore di lavoro.</p>",
+                     "<p>Public health insurance: the total rate (14.6% + additional contribution) is split in half with your employer.</p>")
+    cap = "".join(f"<p>{_e(n)}</p>" for n in note_tetto(d, lang))
+    h.append(_item(tr("Assicurazione sanitaria", "Health insurance"), eur_(d["kv"]), kv_body + cap,
+                   de="KV-Beitrag" + (f" · {d['insurer']}" if d.get("insurer") else ""), lang=lang))
+    rv_body = tr("<p>Contributo alla pensione pubblica (Deutsche Rentenversicherung). Aliquota totale 18,6%, divisa a metà: 9,3% a te e 9,3% al datore di lavoro.</p>",
+                 "<p>Contribution to the public pension (Deutsche Rentenversicherung). Total rate 18.6%, split in half: 9.3% from you and 9.3% from your employer.</p>")
     if "rv" in ver:
         r = ver["rv"]
-        rv_body += f'<p><span class="calc">{_e(eur(r["base"]))} × {_e(pct(9.3, 1))} = {_e(eur(r["atteso"]))}</span></p>' + _check(d["rv"], r["atteso"])
-    h.append(_item("Assicurazione pensionistica", eur(d["rv"]), rv_body, de="RV-Beitrag"))
+        rv_body += f'<p><span class="calc">{_e(eur_(r["base"]))} × {_e(pct_(9.3, 1))} = {_e(eur_(r["atteso"]))}</span></p>' + _check(d["rv"], r["atteso"], lang)
+    h.append(_item(tr("Assicurazione pensionistica", "Pension insurance"), eur_(d["rv"]), rv_body, de="RV-Beitrag", lang=lang))
 
     rate = aliquota_pv(d)
-    kind = tipo_pv(rate, d.get("childlessFlag", False))
-    pv_body = (f"<p>Copre le cure in caso di non autosufficienza. La tua quota è "
-               f"{_e(pct(rate) if rate is not None else '')}{(' – ' + _e(kind)) if kind else ''}.</p>")
+    kind = tipo_pv(rate, d.get("childlessFlag", False), lang)
+    pv_body = tr(f"<p>Copre le cure in caso di non autosufficienza. La tua quota è "
+                 f"{_e(pct_(rate) if rate is not None else '')}{(' – ' + _e(kind)) if kind else ''}.</p>",
+                 f"<p>Covers care in case of long-term care need. Your share is "
+                 f"{_e(pct_(rate) if rate is not None else '')}{(' – ' + _e(kind)) if kind else ''}.</p>")
     if d.get("pvGross") and rate is not None:
-        pv_body += f'<p><span class="calc">{_e(eur(d["pvGross"]))} × {_e(pct(rate))} = {_e(eur(d["pv"]))}</span></p>'
-    av_body = "<p>Finanzia l'indennità di disoccupazione (Arbeitslosengeld). Aliquota totale 2,6%, divisa a metà: 1,3% a te.</p>"
+        pv_body += f'<p><span class="calc">{_e(eur_(d["pvGross"]))} × {_e(pct_(rate))} = {_e(eur_(d["pv"]))}</span></p>'
+    av_body = tr("<p>Finanzia l'indennità di disoccupazione (Arbeitslosengeld). Aliquota totale 2,6%, divisa a metà: 1,3% a te.</p>",
+                 "<p>Funds unemployment benefit (Arbeitslosengeld). Total rate 2.6%, split in half: 1.3% from you.</p>")
     if "av" in ver:
         r = ver["av"]
-        av_body += f'<p><span class="calc">{_e(eur(r["base"]))} × {_e(pct(1.3, 1))} = {_e(eur(r["atteso"]))}</span></p>' + _check(d["av"], r["atteso"])
-    h.append('<div class="pair">' + _item("Non autosufficienza", eur(d["pv"]), pv_body, de="PV-Beitrag", short=True)
-             + _item("Disoccupazione", eur(d["av"]), av_body, de="AV-Beitrag", short=True) + "</div>")
-    soli_b = ("<p>Sovrattassa sull'imposta sul reddito, dovuta sopra una certa soglia (con una zona di raccordo graduale).</p>" if d["soli"] else
-              "<p>Sovrattassa del 5,5% sull'imposta, dovuta solo dai redditi alti. Sei sotto la soglia, quindi non la paghi.</p>")
-    church_b = ("<p>Imposta per gli iscritti a una chiesa: 8% dell'imposta sul reddito in Baviera e Baden-Württemberg, 9% altrove.</p>" if d["church"] else
-                "<p>Dovuta solo dagli iscritti a una chiesa che riscuote l'imposta (8–9% dell'imposta sul reddito). Qui non viene trattenuta.</p>")
-    h.append('<div class="pair">' + _item("Contributo di solidarietà", eur(d["soli"]), soli_b, de="Solidaritätszuschlag", zero=not d["soli"], short=True)
-             + _item("Imposta ecclesiastica", eur(d["church"]), church_b, de="Kirchensteuer", zero=not d["church"], short=True) + "</div></section></div>")
+        av_body += f'<p><span class="calc">{_e(eur_(r["base"]))} × {_e(pct_(1.3, 1))} = {_e(eur_(r["atteso"]))}</span></p>' + _check(d["av"], r["atteso"], lang)
+    h.append('<div class="pair">' + _item(tr("Non autosufficienza", "Long-term care"), eur_(d["pv"]), pv_body, de="PV-Beitrag", short=True, lang=lang)
+             + _item(tr("Disoccupazione", "Unemployment"), eur_(d["av"]), av_body, de="AV-Beitrag", short=True, lang=lang) + "</div>")
+    soli_b = (tr("<p>Sovrattassa sull'imposta sul reddito, dovuta sopra una certa soglia (con una zona di raccordo graduale).</p>",
+                 "<p>A surcharge on income tax, due above a certain threshold (with a gradual phase-in zone).</p>") if d["soli"] else
+              tr("<p>Sovrattassa del 5,5% sull'imposta, dovuta solo dai redditi alti. Sei sotto la soglia, quindi non la paghi.</p>",
+                 "<p>A 5.5% surcharge on tax, due only on high incomes. You are below the threshold, so you do not pay it.</p>"))
+    church_b = (tr("<p>Imposta per gli iscritti a una chiesa: 8% dell'imposta sul reddito in Baviera e Baden-Württemberg, 9% altrove.</p>",
+                   "<p>Tax for church members: 8% of income tax in Bavaria and Baden-Württemberg, 9% elsewhere.</p>") if d["church"] else
+                tr("<p>Dovuta solo dagli iscritti a una chiesa che riscuote l'imposta (8–9% dell'imposta sul reddito). Qui non viene trattenuta.</p>",
+                   "<p>Due only from members of a church that collects the tax (8–9% of income tax). It is not withheld here.</p>"))
+    h.append('<div class="pair">' + _item(tr("Contributo di solidarietà", "Solidarity surcharge"), eur_(d["soli"]), soli_b, de="Solidaritätszuschlag", zero=not d["soli"], short=True, lang=lang)
+             + _item(tr("Imposta ecclesiastica", "Church tax"), eur_(d["church"]), church_b, de="Kirchensteuer", zero=not d["church"], short=True, lang=lang) + "</div></section></div>")
 
     # --- netto
-    chips = [f"Lordo {eur(d['totalGross'])}", f"− Tasse {eur(d['taxTotal'])}", f"− Contributi {eur(d['svTotal'])}", f"= Netto {eur(d['netIncome'])}"]
-    chips += [f"{'−' if p['amount'] < 0 else '+'} {classifica_voce_netto(p['label'])[0]} {eur(abs(p['amount']))}" for p in d["netItems"]]
-    h.append(f'<section class="net"><div class="ttl">ACCREDITATO SUL CONTO</div><div class="sub">Auszahlungsbetrag</div>'
-             f'<div class="big">{_e(eur(d["payout"]))}</div><div class="flow">' + "".join(f"<span>{_e(c)}</span>" for c in chips) + "</div>"
-             + ("<p>Le voci dopo il netto (per esempio mensa, bici aziendale, anticipi) vengono tolte o aggiunte dopo tasse e contributi.</p>" if d["netItems"] else "")
+    chips = [f"{tr('Lordo', 'Gross')} {eur_(d['totalGross'])}", f"− {tr('Tasse', 'Taxes')} {eur_(d['taxTotal'])}",
+             f"− {tr('Contributi', 'Contributions')} {eur_(d['svTotal'])}", f"= {tr('Netto', 'Net')} {eur_(d['netIncome'])}"]
+    chips += [f"{'−' if p['amount'] < 0 else '+'} {classifica_voce_netto(p['label'], lang)[0]} {eur_(abs(p['amount']))}" for p in d["netItems"]]
+    h.append(f'<section class="net"><div class="ttl">{tr("ACCREDITATO SUL CONTO", "PAID INTO YOUR ACCOUNT")}</div><div class="sub">Auszahlungsbetrag</div>'
+             f'<div class="big">{_e(eur_(d["payout"]))}</div><div class="flow">' + "".join(f"<span>{_e(c)}</span>" for c in chips) + "</div>"
+             + (("<p>" + tr("Le voci dopo il netto (per esempio mensa, bici aziendale, anticipi) vengono tolte o aggiunte dopo tasse e contributi.",
+                            "Items after net pay (for example canteen, company bike, advances) are deducted or added after tax and contributions.") + "</p>")
+                if d["netItems"] else "")
              + "</section>")
 
-    h.append(_sezione_bav(d))
+    h.append(_sezione_bav(d, lang))
 
     # --- barra di ripartizione
     if d["totalGross"] > 0:
         neg = -sum(p["amount"] for p in d["netItems"] if p["amount"] < 0)
-        segs = [(max(0.0, d["totalGross"] - d["taxTotal"] - d["svTotal"] - neg), "var(--net)", "Accreditato"),
-                (d["taxTotal"], "var(--ded)", "Tasse"), (d["svTotal"], "var(--ded-line)", "Contributi sociali"),
-                (neg, "var(--gross)", "Trattenute dopo il netto")]
+        segs = [(max(0.0, d["totalGross"] - d["taxTotal"] - d["svTotal"] - neg), "var(--net)", tr("Accreditato", "Paid out")),
+                (d["taxTotal"], "var(--ded)", tr("Tasse", "Taxes")), (d["svTotal"], "var(--ded-line)", tr("Contributi sociali", "Social contributions")),
+                (neg, "var(--gross)", tr("Trattenute dopo il netto", "Deductions after net"))]
         segs = [s for s in segs if s[0] > 0.005]
         tot = sum(s[0] for s in segs)
-        aria = ", ".join(f"{s[2]} {pct(s[0] / tot * 100, 1)}" for s in segs)
-        h.append(f'<section class="section"><h3>Come si divide il lordo</h3><p class="lead">Su ogni 100 € di lordo, circa '
-                 f'{round(d["payout"] / d["totalGross"] * 100)} € arrivano sul tuo conto.</p>'
-                 f'<div class="stack" role="img" aria-label="{_e(aria)}">'
+        aria = ", ".join(f"{s[2]} {pct_(s[0] / tot * 100, 1)}" for s in segs)
+        quota = round(d["payout"] / d["totalGross"] * 100)
+        h.append(f'<section class="section"><h3>{tr("Come si divide il lordo", "How your gross pay is split")}</h3><p class="lead">'
+                 + tr(f"Su ogni 100 € di lordo, circa {quota} € arrivano sul tuo conto.", f"Out of every €100 of gross pay, about €{quota} reaches your account.")
+                 + f'</p><div class="stack" role="img" aria-label="{_e(aria)}">'
                  + "".join(f'<div style="width:{s[0] / tot * 100:.2f}%;background:{s[1]}"></div>' for s in segs) + "</div>"
-                 '<div class="legend">' + "".join(f'<span><i style="background:{s[1]}"></i>{_e(s[2])} {_e(pct(s[0] / tot * 100, 1))}</span>' for s in segs)
+                 '<div class="legend">' + "".join(f'<span><i style="background:{s[1]}"></i>{_e(s[2])} {_e(pct_(s[0] / tot * 100, 1))}</span>' for s in segs)
                  + "</div></section>")
 
     # --- card informative
-    info = [_item("Classe d'imposta", str(classe or "–"), f"<p>{_e(CLASSI.get(classe, 'Determina quanta imposta viene trattenuta ogni mese.'))}</p>", de="StKl", short=True),
-            _item("Cassa malattia", d.get("insurer") or (pct(kk) if kk else "–"),
-                  f"<p>{'Aliquota totale ' + _e(pct(kk)) + ', inclusa la quota aggiuntiva della tua cassa.' if kk else 'La tua cassa malattia pubblica.'}</p>", de="Krankenkasse", short=True)]
+    if kk:
+        kk_body = tr(f"Aliquota totale {_e(pct_(kk))}, inclusa la quota aggiuntiva della tua cassa.",
+                     f"Total rate {_e(pct_(kk))}, including your fund's additional contribution.")
+    else:
+        kk_body = tr("La tua cassa malattia pubblica.", "Your public health insurance fund.")
+    info = [_item(tr("Classe d'imposta", "Tax class"), str(classe or "–"),
+                  f"<p>{_e(classi(lang).get(classe, tr('Determina quanta imposta viene trattenuta ogni mese.', 'Determines how much tax is withheld every month.')))}</p>",
+                  de="StKl", short=True, lang=lang),
+            _item(tr("Cassa malattia", "Health fund"), d.get("insurer") or (pct_(kk) if kk else "–"), f"<p>{kk_body}</p>", de="Krankenkasse", short=True, lang=lang)]
     if d.get("agSv") is not None:
-        info.append(_item("Contributi dell'azienda", eur(d["agSv"]), "<p>Oltre al tuo lordo, l'azienda paga la sua metà di pensione, sanità, disoccupazione e "
-                          "non autosufficienza. Non compare nel netto ma conta per pensione e prestazioni.</p>", de="SV-AG-Anteil", cls="b", short=True))
+        info.append(_item(tr("Contributi dell'azienda", "Employer contributions"), eur_(d["agSv"]), tr(
+            "<p>Oltre al tuo lordo, l'azienda paga la sua metà di pensione, sanità, disoccupazione e "
+            "non autosufficienza. Non compare nel netto ma conta per pensione e prestazioni.</p>",
+            "<p>On top of your gross pay, the company pays its half of pension, health, unemployment and "
+            "long-term care insurance. It does not show up in your net pay but counts towards your pension and benefits.</p>"),
+            de="SV-AG-Anteil", cls="b", short=True, lang=lang))
     if d.get("agTotal") is not None:
-        extra = f" + altri oneri {eur(d['agAdd'])} (assicurazioni per malattia, maternità e insolvenza, Umlagen)" if d.get("agAdd") else ""
-        info.append(_item("Costo totale per l'azienda", eur(d["agTotal"]),
-                          f"<p>Lordo {_e(eur(d['totalGross']))} + contributi azienda {_e(eur(d.get('agSv')))}{_e(extra)}.</p>", de="Gesamtkosten", cls="b", short=True))
+        extra = (tr(f" + altri oneri {eur_(d['agAdd'])} (assicurazioni per malattia, maternità e insolvenza, Umlagen)",
+                    f" + other charges {eur_(d['agAdd'])} (sickness, maternity and insolvency insurance, Umlagen)") if d.get("agAdd") else "")
+        info.append(_item(tr("Costo totale per l'azienda", "Total cost to the employer"), eur_(d["agTotal"]),
+                          tr(f"<p>Lordo {_e(eur_(d['totalGross']))} + contributi azienda {_e(eur_(d.get('agSv')))}{_e(extra)}.</p>",
+                             f"<p>Gross pay {_e(eur_(d['totalGross']))} + employer contributions {_e(eur_(d.get('agSv')))}{_e(extra)}.</p>"),
+                          de="Gesamtkosten", cls="b", short=True, lang=lang))
     h.append('<div class="info">' + "".join(info) + "</div>")
 
     # --- da inizio anno
@@ -282,20 +349,25 @@ def report_html(d: Dict, dark: Optional[bool] = None) -> str:
         mese = {"gross": d["totalGross"], "taxGross": d["taxGross"], "taxFree": sum(p["amount"] for p in d["payments"] if p["tax"] == "F" and p.get("gb") != "N"),
                 "wageTax": d["wageTax"], "soli": d["soli"], "church": d["church"], "svGross": d.get("rvGross"),
                 "kv": d["kv"], "rv": d["rv"], "av": d["av"], "pv": d["pv"]}
-        nomi = {"gross": ("Lordo totale", "Gesamt-Brutto"), "taxGross": ("Lordo imponibile", "Steuer-Brutto"),
-                "taxFree": ("Voci esenti", "Steuerfreie Bezüge"), "wageTax": ("Imposta sul reddito", "Lohnsteuer"),
-                "soli": ("Solidarietà", "Solidaritätszuschlag"), "church": ("Imposta ecclesiastica", "Kirchensteuer"),
-                "svGross": ("Base contributiva", "SV-Brutto"), "kv": ("Sanitaria", "KV-Beitrag"), "rv": ("Pensionistica", "RV-Beitrag"),
-                "av": ("Disoccupazione", "AV-Beitrag"), "pv": ("Non autosufficienza", "PV-Beitrag")}
+        nomi = {"gross": (tr("Lordo totale", "Total gross"), "Gesamt-Brutto"), "taxGross": (tr("Lordo imponibile", "Taxable gross"), "Steuer-Brutto"),
+                "taxFree": (tr("Voci esenti", "Tax-free items"), "Steuerfreie Bezüge"), "wageTax": (tr("Imposta sul reddito", "Income tax"), "Lohnsteuer"),
+                "soli": (tr("Solidarietà", "Solidarity surcharge"), "Solidaritätszuschlag"), "church": (tr("Imposta ecclesiastica", "Church tax"), "Kirchensteuer"),
+                "svGross": (tr("Base contributiva", "Contribution base"), "SV-Brutto"), "kv": (tr("Sanitaria", "Health"), "KV-Beitrag"),
+                "rv": (tr("Pensionistica", "Pension"), "RV-Beitrag"), "av": (tr("Disoccupazione", "Unemployment"), "AV-Beitrag"),
+                "pv": (tr("Non autosufficienza", "Long-term care"), "PV-Beitrag")}
         righe = [(k, v) for k, v in y.items() if k in nomi and not (v == 0 and not mese.get(k))]
-        h.append('<section class="section"><h3>Da inizio anno</h3><p class="lead">Totali progressivi dal blocco Verdienstbescheinigung.</p>'
-                 '<div class="tablewrap"><table><thead><tr><th>Voce</th><th>Termine tedesco</th><th class="num">Questo mese</th>'
-                 '<th class="num">Da inizio anno</th></tr></thead><tbody>'
-                 + "".join(f'<tr><td>{_e(nomi[k][0])}</td><td>{_e(nomi[k][1])}</td><td class="num">{_e(eur(mese.get(k)))}</td>'
-                           f'<td class="num">{_e(eur(v))}</td></tr>' for k, v in righe) + "</tbody></table></div></section>")
+        h.append(f'<section class="section"><h3>{tr("Da inizio anno", "Year to date")}</h3><p class="lead">'
+                 + tr("Totali progressivi dal blocco Verdienstbescheinigung.", "Running totals from the Verdienstbescheinigung block.") + '</p>'
+                 f'<div class="tablewrap"><table><thead><tr><th>{tr("Voce", "Item")}</th><th>{tr("Termine tedesco", "German term")}</th>'
+                 f'<th class="num">{tr("Questo mese", "This month")}</th><th class="num">{tr("Da inizio anno", "Year to date")}</th></tr></thead><tbody>'
+                 + "".join(f'<tr><td>{_e(nomi[k][0])}</td><td>{_e(nomi[k][1])}</td><td class="num">{_e(eur_(mese.get(k)))}</td>'
+                           f'<td class="num">{_e(eur_(v))}</td></tr>' for k, v in righe) + "</tbody></table></div></section>")
 
-    h.append('<section class="section"><h3>Le sigle del cedolino</h3><div class="gloss">'
-             + "".join(f"<div><b>{_e(a)}</b><span>{_e(b)}</span></div>" for a, b in GLOSSARIO) + "</div></section>")
-    h.append('<p class="foot">Spiegazione basata sulle cifre del cedolino e sulle aliquote 2026. Non è consulenza fiscale: '
-             "per casi specifici chiedi all'ufficio paghe o a un consulente fiscale (Steuerberater).</p></div>")
+    gloss = GLOSSARIO_EN if lang == "en" else GLOSSARIO
+    h.append(f'<section class="section"><h3>{tr("Le sigle del cedolino", "Payslip abbreviations")}</h3><div class="gloss">'
+             + "".join(f"<div><b>{_e(a)}</b><span>{_e(b)}</span></div>" for a, b in gloss) + "</div></section>")
+    h.append('<p class="foot">' + tr("Spiegazione basata sulle cifre del cedolino e sulle aliquote 2026. Non è consulenza fiscale: "
+                                     "per casi specifici chiedi all'ufficio paghe o a un consulente fiscale (Steuerberater).",
+                                     "Explanation based on the figures on your payslip and the 2026 rates. This is not tax advice: "
+                                     "for specific cases ask your payroll department or a tax advisor (Steuerberater).") + "</p></div>")
     return "".join(h)

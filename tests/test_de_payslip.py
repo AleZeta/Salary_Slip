@@ -98,3 +98,15 @@ def test_dati_bav_e_lordo_con_flag_n():
         {"label": "bAV AG-Pflichtz,lfd", "amount": 46.85, "tax": "F", "sv": "F", "gb": "N"}]})
     assert d["totalGross"] == 6250.0 and d["taxGross"] == 6093.85
     assert dati_bav(d) == {"conversion": 156.15, "employer": 46.85, "total": 203.0}
+
+
+def test_report_html_in_inglese():
+    from src.de_calc import calcola
+    from src.de_render import report_html
+    d = normalizza(calcola(75_000, 17.29, False, 0, 2026, bav_mensile=156.15, bav_datore_pct=30))
+    en = report_html(d, lang="en")
+    assert "Gross" in en and "Tap for details" in en and "€ 6,250.00" in en
+    for parola in ("Stipendio", "Tocca", "Tasse e contributi", "Accreditato", "Pensione aziendale", "Imposta", "Lordo"):
+        assert parola not in en
+    assert "Tocca per i dettagli" in report_html(d, lang="it")
+    assert "Tocca per i dettagli" in report_html(d)

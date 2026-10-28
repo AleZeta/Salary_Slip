@@ -67,12 +67,12 @@ def calcola(ral: float, kk_totale: float = 17.29, ha_figli: bool = False, chiesa
     ag_sv = m(base_rv * r["rv"] + base_rv * r["av"] + base_kv * kk_totale / 200 + base_kv * r["pv"])
     d = {
         "source": "calc", "year": anno, "taxClass": 1, "kvRateTotal": kk_totale, "childlessFlag": not ha_figli,
-        "payments": [{"code": "", "label": "Gehalt (stipendio)", "amount": m(ral), "tax": "L", "sv": "L"}],
+        "payments": [{"code": "", "label": "Gehalt", "amount": m(ral), "tax": "L", "sv": "L"}],
         "totalGross": m(ral), "taxGross": m(ral_fiscale), "wageTax": m(lst), "soli": m(soli), "church": m(kist),
         "kvGross": m(base_kv), "rvGross": m(base_rv), "avGross": m(base_rv), "pvGross": m(base_kv),
         "kv": m(kv), "rv": m(rv), "av": m(av), "pv": m(pv),
         "taxTotal": m(tasse), "svTotal": m(sv), "netIncome": m(ral - tasse - sv), "payout": m(ral - tasse - sv - bav),
-        "netItems": [{"code": "", "label": "Versamento pensione aziendale (bAV)", "amount": -m(bav)}] if bav else [], "ytd": {},
+        "netItems": [{"code": "", "label": "Gehaltsverzicht bAV", "amount": -m(bav)}] if bav else [], "ytd": {},
         "agSv": ag_sv, "agAdd": None, "agTotal": round(m(ral) + ag_sv + m(bav_datore), 2),
         "zve": zve, "lohnsteuer_annua": lst,
     }

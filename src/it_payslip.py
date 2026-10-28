@@ -12,6 +12,14 @@ from config.rates import IT_RATES
 DIVISORE_TFR = 13.5  # art. 2120 c.c.: quota annua = retribuzione annua / 13,5 (rivalutazione esclusa)
 
 
+NOTE_TESTI = {
+    "detrazione_eccede": {
+        "it": "La detrazione supera l'imposta lorda: l'IRPEF netta è zero (la parte eccedente non è rimborsata).",
+        "en": "The tax credits exceed the gross tax, so net income tax (IRPEF) is zero (the excess is not refunded).",
+    },
+}
+
+
 @dataclass
 class RisultatoIT:
     ral: float
@@ -29,7 +37,7 @@ class RisultatoIT:
     netto: float
     tfr: float
     extra_ded: float = 0.0
-    note: List[str] = field(default_factory=list)
+    note: List[str] = field(default_factory=list)  # codici: il testo è in NOTE_TESTI, scelto per lingua dal renderer
 
     @property
     def trattenute(self) -> float:
@@ -99,7 +107,7 @@ def calcola(ral: float, mensilita: int = 13, add_regionale_pct: float = 1.73, ad
     netto = ral - inps - netta - reg - com + bonus - extra_ded_annue
     note = []
     if det_lav > lorda:
-        note.append("La detrazione supera l'imposta lorda: l'IRPEF netta è zero (la parte eccedente non è rimborsata).")
+        note.append("detrazione_eccede")
     return RisultatoIT(ral=ral, mensilita=mensilita, inps=inps, imponibile=imponibile, irpef_lorda=lorda,
                        scaglioni=scaglioni, detrazione_lavoro=det_lav, detrazione_cuneo=det_cuneo, irpef_netta=netta,
                        add_regionale=reg, add_comunale=com, bonus_cuneo=bonus, netto=netto, tfr=ral / DIVISORE_TFR,

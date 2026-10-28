@@ -55,3 +55,39 @@ def test_parser_cedolino_sintetico():
     r = parse([pagina])
     assert r["ok"] and r["totalComp"] == 3298.15 and r["netto"] == 3297.22 and r["warnings"] == []
     assert parse([[it("altro", 0, 0)]])["ok"] is False
+
+
+PAROLE_IT = ("Tocca", "Tasse e contributi", "Trattenute", "Stipendio")
+
+
+def test_render_inglese():
+    from src.it_render import report_html
+    html = report_html(calcola(40_000, 13), 1.73, 0.8, 2100.0, lang="en")
+    assert "NET PAY" in html and "Tap for details" in html and "Your payslip" in html
+    assert "€ 3,676.00" in html and "1.73%" in html
+    assert not any(p in html for p in PAROLE_IT)
+    assert "Tocca per i dettagli" in report_html(calcola(40_000, 13), 1.73, 0.8, 2100.0, lang="it")
+    assert "Tocca per i dettagli" in report_html(calcola(40_000, 13), 1.73, 0.8, 2100.0)
+
+
+def test_nota_detrazione_tradotta():
+    from src.it_render import report_html
+    r = calcola(9_000, 13)
+    assert r.note
+    assert "tax credits exceed" in report_html(r, 1.0, 0.5, lang="en")
+    assert "La detrazione supera" in report_html(r, 1.0, 0.5)
+
+
+def test_cedolino_inglese():
+    from src.it_cedolino import report_html
+    riga = lambda code, desc, comp=None, tratt=None, qty=None, unit=None, info=None, period="": dict(
+        code=code, desc=desc, comp=comp, tratt=tratt, qty=qty, unit=unit, info=info, period=period)
+    d = {"month": 5, "year": 2026, "employer": "ACME", "payDate": "27/05/2026", "warnings": [], "totalComp": 3298.15, "totalTratt": 0.93,
+         "netto": 3297.22, "fixed": [], "progressive": {}, "residui": {"FERIE": {"residuo": 16, "prev": 8, "spettanti": 16, "godute": 8}},
+         "lines": [riga("AA00", "RETRIBUZIONE ORDINARIA", comp=3298.15), riga("AB86", "TRATTENUTA MENSA", tratt=0.93, qty=100, unit=0.93)]}
+    html = report_html(d, lang="en")
+    assert "May 2026" in html and "Net pay".upper() in html and "Tap" in html and "Base salary" in html
+    assert "Canteen" in html and "Holidays left" in html and "Employer" in html and "Paid on" in html
+    assert not any(p in html for p in PAROLE_IT)
+    it = report_html(d)
+    assert "Tocca per i dettagli" in it and "Maggio 2026" in it.replace("maggio", "Maggio") and "Stipendio base" in it

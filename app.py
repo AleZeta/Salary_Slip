@@ -1,4 +1,4 @@
-"""Menu dell'app Salary Slip: cedolino tedesco (da PDF) e italiano (da RAL), spiegati voce per voce."""
+"""Menu dell'app Salary Slip: cedolino tedesco (da PDF) e italiano (da PDF o RAL), spiegati voce per voce."""
 
 import sys
 from pathlib import Path
@@ -9,27 +9,40 @@ if str(BASE_DIR) not in sys.path:
 
 import streamlit as st
 
+from src.i18n import lingua_corrente, selettore_lingua
+
 st.set_page_config(page_title="Menu · Salary Slip", page_icon="🧾", layout="wide")
 
 
 def menu() -> None:
-    st.title("🧾 Menu")
-    st.write("Capisci ogni voce della tua busta paga: lordo, tasse, contributi e netto.")
+    lang = selettore_lingua()
+    tr = lambda it, en: en if lang == "en" else it
+    st.title("🧾 " + tr("Menu", "Menu"))
+    st.write(tr("Capisci ogni voce della tua busta paga: lordo, tasse, contributi e netto.",
+                "Understand every line of your payslip: gross pay, taxes, contributions and net pay."))
     c1, c2 = st.columns(2)
     with c1:
-        st.subheader("🇩🇪 Cedolino tedesco")
-        st.write("Carica il PDF DATEV: lo leggo con uno script, spiego ogni voce e ricalcolo i contributi.")
-        st.page_link("pages/1_Cedolino_tedesco.py", label="Apri", icon="🇩🇪")
+        st.subheader(tr("🇩🇪 Cedolino tedesco", "🇩🇪 German payslip"))
+        st.write(tr("Carica il PDF DATEV o calcola dallo stipendio lordo (anche con pensione aziendale bAV): spiego ogni voce e ricalcolo i contributi.",
+                    "Upload the DATEV PDF or calculate from gross salary (including company pension bAV): I explain every line and recheck the contributions."))
+        st.page_link("pages/1_Cedolino_tedesco.py", label=tr("Apri", "Open"), icon="🇩🇪")
     with c2:
-        st.subheader("🇮🇹 Cedolino italiano")
-        st.write("Inserisci la RAL: calcolo INPS, IRPEF, addizionali, detrazioni, netto mensile e TFR.")
-        st.page_link("pages/2_Cedolino_italiano.py", label="Apri", icon="🇮🇹")
-    st.caption("Il PDF viene elaborato solo nel server dell'app e non viene salvato. Non è consulenza fiscale.")
+        st.subheader(tr("🇮🇹 Cedolino italiano", "🇮🇹 Italian payslip"))
+        st.write(tr("Carica il PDF del cedolino o inserisci la RAL: INPS, IRPEF, addizionali, detrazioni, netto mensile e TFR.",
+                    "Upload the payslip PDF or enter your gross salary (RAL): INPS, IRPEF, surcharges, tax credits, monthly net pay and TFR."))
+        st.page_link("pages/2_Cedolino_italiano.py", label=tr("Apri", "Open"), icon="🇮🇹")
+    st.caption(tr("Il PDF viene elaborato solo nel server dell'app e non viene salvato. Non è consulenza fiscale.",
+                  "The PDF is processed only on the app server and is not stored. This is not tax advice."))
 
 
-pagina = st.navigation([
-    st.Page(menu, title="Menu", icon="🧾", default=True, url_path="menu"),
-    st.Page("pages/1_Cedolino_tedesco.py", title="Cedolino tedesco", icon="🇩🇪", url_path="tedesco"),
-    st.Page("pages/2_Cedolino_italiano.py", title="Cedolino italiano", icon="🇮🇹", url_path="italiano"),
-])
+def pagine():
+    lang = lingua_corrente()
+    return [
+        st.Page(menu, title="Menu", icon="🧾", default=True, url_path="menu"),
+        st.Page("pages/1_Cedolino_tedesco.py", title="Cedolino tedesco" if lang == "it" else "German payslip", icon="🇩🇪", url_path="tedesco"),
+        st.Page("pages/2_Cedolino_italiano.py", title="Cedolino italiano" if lang == "it" else "Italian payslip", icon="🇮🇹", url_path="italiano"),
+    ]
+
+
+pagina = st.navigation(pagine())
 pagina.run()
