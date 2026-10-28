@@ -50,3 +50,20 @@ def test_manuale():
     assert d["totalGross"] == pytest.approx(6309.85)
     assert d["payout"] == pytest.approx(6309.85 - 1162.5 - 1304.49 - 13.44)
     assert d["warnings"] == []
+
+
+def test_etichette_con_spazi_tra_le_lettere():
+    # DATEV stampa titoli e alcune etichette con spazi tra le lettere
+    from src.de_parser import DE_PAGE, _eq, _senza_spazi
+    assert DE_PAGE.search(_senza_spazi("A  b re c h n u n g   d e r  B r u tt o /N  e tt o -B e z ü g e"))
+    assert _eq("S te u er- Br ut to", "Steuer-Brutto")
+
+
+def test_parse_pagina_sintetica():
+    from src.de_parser import parse
+    it = lambda s, x, y, w=40: {"str": s, "x": x, "y": y, "w": w}
+    pagina = [it("Abrechnung der Brutto/Netto-Bezüge", 48, 798), it("für August 2026", 246, 798),
+              it("00090 090296 1", 48, 773), it("Gesamt-Brutto", 525, 379), it("Auszahlungsbetrag", 513, 91)]
+    r = parse([pagina])
+    assert r["ok"] and r["month"] == 8 and r["year"] == 2026 and r["taxClass"] == 1
+    assert parse([[it("altro", 0, 0)]])["ok"] is False
