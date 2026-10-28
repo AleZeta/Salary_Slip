@@ -96,7 +96,8 @@ GLOSSARIO = [
 def eur(v: Optional[float]) -> str:
     if v is None:
         return "–"
-    return "€ " + f"{v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    testo = f"{abs(v):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    return ("− € " if v < 0 else "€ ") + testo
 
 
 def pct(v: float, d: int = 2) -> str:

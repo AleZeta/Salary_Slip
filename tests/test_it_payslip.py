@@ -34,3 +34,11 @@ def test_netto_coerente():
 def test_ral_zero():
     r = calcola(0)
     assert r.netto == 0 and r.irpef_netta == 0
+
+
+def test_render_italiano_e_formato_importi():
+    from src.de_render import eur
+    from src.it_render import report_html
+    assert eur(-3676.0) == "− € 3.676,00" and eur(1234.5) == "€ 1.234,50"
+    html = report_html(calcola(40_000, 13), 1.73, 0.8, 2100.0)
+    assert "NETTO A PAGARE" in html and "Il tuo cedolino" in html
