@@ -7,8 +7,8 @@ Input: lista di pagine, ognuna lista di item {"str", "x", "y", "w"} (y dal basso
 import re
 from typing import Dict, List, Optional
 
-DE_PAGE = re.compile(r"Abrechnung der Brutto/Netto-Bez")
-EN_PAGE = re.compile(r"Pay Advice")
+DE_PAGE = re.compile(r"AbrechnungderBrutto/Netto-Bez")
+EN_PAGE = re.compile(r"PayAdvice")
 
 MESI = {
     "januar": 1, "februar": 2, "märz": 3, "maerz": 3, "april": 4, "mai": 5, "juni": 6, "juli": 7,
@@ -44,6 +44,15 @@ LABELS = {
     ),
 }
 
+def _senza_spazi(s: str) -> str:
+    """Il titolo è stampato con spazi tra le lettere: il confronto ignora gli spazi."""
+    return re.sub(r"\s+", "", s)
+
+
+def _eq(s: str, label: str) -> bool:
+    return _senza_spazi(s) == _senza_spazi(label)
+
+
 _NUM_TOKEN = re.compile(r"^-?[\d.]+(,\d+)?-?(\s*[A-Z])?$")
 
 
@@ -72,7 +81,7 @@ def _is_num(s: str) -> bool:
 
 def _find(items, label, min_y=None, max_y=None, min_x=None):
     for i in items:
-        if i["str"].strip() != label:
+        if not _eq(i["str"], label):
             continue
         if min_y is not None and not i["y"] > min_y:
             continue
@@ -86,7 +95,7 @@ def _find(items, label, min_y=None, max_y=None, min_x=None):
 
 def _under_header(items, label, header_y):
     """Valore numerico sotto l'intestazione `label`, assegnato alla colonna più vicina nella riga di intestazione."""
-    lab = next((i for i in items if i["str"].strip() == label and abs(i["y"] - header_y) < 2), None)
+    lab = next((i for i in items if _eq(i["str"], label) and abs(i["y"] - header_y) < 2), None)
     if not lab:
         return None
     row = [i for i in items if abs(i["y"] - header_y) < 2 and len(i["str"].strip()) > 2]
@@ -108,9 +117,9 @@ def _same_row_right(items, lab, x_min, x_max):
 def parse(pages: List[List[dict]]) -> Dict:
     """Restituisce un dict con `ok` True/False. Se False: `reason`."""
     lang = "de"
-    page = next((p for p in pages if any(DE_PAGE.search(i["str"]) for i in p)), None)
+    page = next((p for p in pages if any(DE_PAGE.search(_senza_spazi(i["str"])) for i in p)), None)
     if page is None:
-        page, lang = next((p for p in pages if any(EN_PAGE.search(i["str"]) for i in p)), None), "en"
+        page, lang = next((p for p in pages if any(EN_PAGE.search(_senza_spazi(i["str"])) for i in p)), None), "en"
     if page is None:
         return {"ok": False, "reason": "not_datev"}
 
@@ -165,7 +174,7 @@ def parse(pages: List[List[dict]]) -> Dict:
 
     # totali (colonna destra)
     def right_total(lab):
-        l = next((i for i in it if i["str"].strip() == lab and i["x"] > 470), None)
+        l = next((i for i in it if _eq(i["str"], lab) and i["x"] > 470), None)
         if not l:
             return None
         c = sorted((i for i in it if i["x"] > 480 and l["y"] - 22 < i["y"] < l["y"] - 4 and _is_num(i["str"])),
@@ -177,12 +186,12 @@ def parse(pages: List[List[dict]]) -> Dict:
 
     # costi del datore
     for k, lab in (("agSv", "agSv"), ("agAdd", "agAdd"), ("agTotal", "agTot")):
-        l = next((i for i in it if i["str"].strip() == T[lab]), None)
+        l = next((i for i in it if _eq(i["str"], T[lab])), None)
         v = _under_header(it, T[lab], l["y"]) if l else None
         out[k] = num(v["str"]) if v else None
 
     # voci lorde
-    ph = next((i for i in it if i["str"].strip() == T["payHead"] and i["y"] > 420), None)
+    ph = next((i for i in it if _eq(i["str"], T["payHead"]) and i["y"] > 420), None)
     out["payments"] = []
     if ph:
         bottom = (tg["y"] if tg else 350) + 15
@@ -199,7 +208,7 @@ def parse(pages: List[List[dict]]) -> Dict:
             })
 
     # voci dopo il netto
-    nh = next((i for i in it if i["str"].strip() == T["netHead"]), None)
+    nh = next((i for i in it if _eq(i["str"], T["netHead"])), None)
     out["netItems"] = []
     if nh:
         rows = [i for i in it if 280 < i["x"] < 480 and 100 < i["y"] < nh["y"] - 4 and re.match(r"^\d{3,4}\s+\S", i["str"].strip())]
@@ -212,7 +221,7 @@ def parse(pages: List[List[dict]]) -> Dict:
     out["ytd"] = {}
     ytd_top = nh["y"] if nh else 260
     for lab, key in T["ytd"].items():
-        l = next((i for i in it if i["str"].strip() == lab and 110 < i["y"] < ytd_top + 2 and i["x"] < 260), None)
+        l = next((i for i in it if _eq(i["str"], lab) and 110 < i["y"] < ytd_top + 2 and i["x"] < 260), None)
         if not l:
             continue
         x_min, x_max = (95, 175) if l["x"] < 100 else (220, 290)
@@ -234,18 +243,51 @@ def parse(pages: List[List[dict]]) -> Dict:
     return out
 
 
+def _chunk_da_chars(chars) -> List[dict]:
+    """Raggruppa i caratteri di una pagina in blocchi di testo come fa pdf.js: stessa riga di base, un solo font/corpo,
+    nessun salto orizzontale. Gli spazi singoli restano nel blocco (es. "2000 Gehalt"), le sequenze di spazi o i
+    salti di posizione separano le colonne."""
+    righe: List[list] = []
+    for c in sorted(chars, key=lambda c: (-c["matrix"][5], c["x0"])):
+        y = c["matrix"][5]
+        if righe and abs(righe[-1][0] - y) < 1.5:
+            righe[-1][1].append(c)
+        else:
+            righe.append([y, [c]])
+    items = []
+    for y, cs in righe:
+        cs.sort(key=lambda c: c["x0"])
+        blocco: list = []
+
+        def chiudi():
+            while blocco and blocco[-1]["text"].isspace():
+                blocco.pop()
+            testo = "".join(c["text"] for c in blocco).strip()
+            if testo:
+                items.append({"str": testo, "x": float(blocco[0]["matrix"][4]), "y": float(y),
+                              "w": float(blocco[-1]["x1"] - blocco[0]["x0"])})
+            blocco.clear()
+
+        for c in cs:
+            if c["text"].isspace():
+                if not blocco:
+                    continue
+                blocco.append(c)
+                continue
+            if blocco:
+                prev = next(b for b in reversed(blocco) if not b["text"].isspace())
+                gap = c["x0"] - prev["x1"]
+                if gap > 0.7 * c["size"] or abs(c["size"] - prev["size"]) > 1.5:
+                    chiudi()
+
+            blocco.append(c)
+        chiudi()
+    return items
+
+
 def items_da_pdf(file) -> List[List[dict]]:
-    """Legge un PDF (path o file-like) in item di testo {str,x,y,w}, y dal basso. Massimo 6 pagine."""
+    """Legge un PDF (path o file-like) in item di testo {str,x,y,w} con y della linea di base dal basso (come pdf.js)."""
     import pdfplumber
 
-    pagine = []
     with pdfplumber.open(file) as pdf:
-        for pg in pdf.pages[:6]:
-            h = float(pg.height)
-            words = pg.extract_words(keep_blank_chars=True, x_tolerance=2, use_text_flow=False)
-            pagine.append([
-                {"str": w["text"], "x": float(w["x0"]), "y": h - float(w["bottom"]) + 2.0,
-                 "w": float(w["x1"] - w["x0"])}
-                for w in words if w["text"].strip()
-            ])
-    return pagine
+        return [_chunk_da_chars(pg.chars) for pg in pdf.pages[:6]]
