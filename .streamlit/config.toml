@@ -1,2 +1,6 @@
-[theme]
+# Due temi (chiaro e scuro): l'utente li sceglie da Settings o segue il sistema
+[theme.light]
 primaryColor = "#7c35f5"
+
+[theme.dark]
+primaryColor = "#a57bf8"
