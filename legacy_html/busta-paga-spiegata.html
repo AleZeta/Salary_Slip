@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Busta paga spiegata · Payslip explained</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ffffff; --ink:#1a1a1a; --muted:#5b5b5b; --card:#f3f3f3; --line:rgba(127,127,127,.25);
+  --gross:#ff5a36; --gross-soft:#f8ab87; --gross-line:#ff7a58;
+  --ded:#7c35f5; --ded-soft:#e3d6fd; --ded-line:#9a63f7;
+  --net:#2aa878; --ok:#1f8a5f; --warn:#c2410c;
+  --info-y:#f6c64f; --info-b:#2f62e6; --onstrong:#ffffff; --focus:#1a1a1a;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#16151a; --ink:#f1f0f4; --muted:#b3b0bd; --card:#24222b; --line:rgba(200,200,210,.2);
+    --gross-soft:#5a2f22; --ded-soft:#34275a; --ded-line:#a57bf8; --ok:#4ade80; --warn:#fb923c; --focus:#f1f0f4;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16151a; --ink:#f1f0f4; --muted:#b3b0bd; --card:#24222b; --line:rgba(200,200,210,.2);
+  --gross-soft:#5a2f22; --ded-soft:#34275a; --ded-line:#a57bf8; --ok:#4ade80; --warn:#fb923c; --focus:#f1f0f4;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.5}
+.wrap{max-width:1040px;margin:0 auto;padding:24px 18px 60px}
+h1,h2,.big,.ttl,.n{font-family:"Barlow Condensed","Arial Narrow",Arial,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,summary:focus-visible,input:focus-visible,select:focus-visible,.drop:focus-within{outline:3px solid var(--focus);outline-offset:2px}
+.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:18px}
+.topbar h1{font-size:clamp(32px,6vw,52px);line-height:1;margin:0 0 6px;font-weight:800}
+.topbar p{margin:0;color:var(--muted);max-width:62ch}
+.lang{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;flex:none}
+.lang button{background:none;border:0;padding:6px 12px;font-weight:600;color:var(--muted)}
+.lang button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;
+  border:2px dashed var(--ded-line);background:var(--ded-soft);border-radius:22px;padding:34px 18px;cursor:pointer;transition:transform .15s ease, border-color .15s ease}
+.drop.over{border-color:var(--gross);transform:scale(1.01)}
+.drop .ic{font-size:38px;line-height:1}
+.drop b{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-size:26px}
+.drop span{color:var(--muted);font-size:14.5px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.privacy{font-size:13.5px;color:var(--muted);margin:10px 4px 0}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.btn{border:1.5px solid var(--ink);background:none;border-radius:999px;padding:8px 16px;font-weight:600}
+.btn.primary{background:var(--ink);color:var(--bg)}
+.btn[hidden]{display:none}
+.status{margin-top:14px;font-size:15px;min-height:1.5em}
+.status.err{color:var(--warn)}
+.notice{background:var(--card);border-left:4px solid var(--warn);border-radius:10px;padding:10px 14px;margin-top:14px;font-size:14.5px}
+.notice.ok{border-left-color:var(--ok)}
+form.manual{margin-top:18px;background:var(--card);border-radius:18px;padding:18px}
+form.manual h2{font-size:24px;margin:0 0 4px}
+form.manual .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px 16px;margin:12px 0}
+form.manual label{display:flex;flex-direction:column;font-size:13.5px;color:var(--muted);gap:4px}
+form.manual input,form.manual select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+form.manual .chk{flex-direction:row;align-items:center;gap:8px;color:var(--ink)}
+form.manual fieldset{border:0;padding:0;margin:14px 0 0}
+form.manual legend{font-weight:600;padding:0}
+.rhead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px;margin:30px 0 16px}
+.rhead h2{font-size:clamp(30px,5vw,44px);line-height:1.05;margin:0;font-weight:800}
+.meta{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;color:var(--muted);margin-top:6px}
+.meta b{color:var(--ink);font-weight:600}
+.src{font-size:12.5px;border-radius:999px;padding:2px 10px;background:var(--card);color:var(--muted);margin-left:6px}
+.top{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+@media (max-width:760px){.top{grid-template-columns:1fr}}
+.panel{border-radius:22px;padding:18px}
+.panel.gross{background:var(--gross-soft)} .panel.ded{background:var(--ded-soft)}
+.head{border-radius:16px;padding:18px 16px;text-align:center;color:var(--onstrong);border:2px solid rgba(255,255,255,.7)}
+.gross .head{background:var(--gross)} .ded .head{background:var(--ded)}
+.ttl{font-size:26px;font-weight:700;letter-spacing:.01em;line-height:1.1}
+.sub{font-size:14px;opacity:.9}
+.big{font-size:clamp(38px,7vw,54px);font-weight:800;line-height:1.05;margin-top:6px;font-variant-numeric:tabular-nums}
+.ofwhich{text-align:center;margin:10px 0;font-size:15px}
+.item{background:var(--card);border-radius:14px;border:2px solid var(--gross-line);margin-top:10px}
+.ded .item{border-color:var(--ded-line)}
+.item summary{list-style:none;cursor:pointer;padding:12px 14px;text-align:center;border-radius:12px}
+.item summary::-webkit-details-marker{display:none}
+.item .n{font-weight:700;font-size:19px;line-height:1.15}
+.item .de{font-size:13px;color:var(--muted)}
+.item .v{font-size:19px;font-variant-numeric:tabular-nums}
+.item .hint{font-size:12px;color:var(--muted);margin-top:2px}
+.item[open] .hint{display:none}
+.item .body{padding:0 16px 14px;font-size:14.5px}
+.item .body p{margin:.4em 0}
+.calc{font-variant-numeric:tabular-nums;background:rgba(127,127,127,.12);border-radius:8px;padding:6px 10px;display:inline-block;font-size:14px}
+.chk-ok{color:var(--ok);font-weight:600} .chk-warn{color:var(--warn);font-weight:600}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.zero .v{color:var(--muted)}
+.net{margin-top:22px;background:var(--net);color:var(--onstrong);border-radius:22px;padding:22px;text-align:center}
+.net .ttl{font-size:32px} .net .big{font-size:clamp(52px,11vw,84px)}
+.net p{margin:6px auto 0;max-width:62ch;font-size:15px;opacity:.95}
+.flow{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 12px;margin-top:12px;font-size:14.5px;font-variant-numeric:tabular-nums}
+.flow span{background:rgba(255,255,255,.18);border-radius:999px;padding:3px 12px}
+.section{margin-top:34px}
+.section h3{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-size:28px;margin:0 0 4px;font-weight:700}
+.lead{margin:0 0 12px;color:var(--muted);max-width:70ch}
+.stack{display:flex;height:34px;border-radius:10px;overflow:hidden;background:var(--card)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font-size:14px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.info{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:26px}
+@media (max-width:860px){.info{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:420px){.info{grid-template-columns:1fr}}
+.info .item{border-color:var(--info-y)} .info .item.b{border-color:var(--info-b)}
+.tablewrap{overflow-x:auto;border-radius:14px;background:var(--card)}
+table{border-collapse:collapse;width:100%;min-width:520px;font-size:14.5px}
+th,td{padding:9px 14px;text-align:left;border-bottom:1px solid var(--line)}
+th{font-weight:600}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+.gloss{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px 22px}
+.gloss div{padding:8px 0;border-bottom:1px solid var(--line)}
+.gloss b{display:block} .gloss span{font-size:14px;color:var(--muted)}
+.foot{margin-top:30px;font-size:13px;color:var(--muted);max-width:75ch}
+@media (prefers-reduced-motion:no-preference){.item .body{animation:open .18s ease-out}}
+@keyframes open{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@media print{.topbar .lang,#intake,.rtools{display:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div>
+      <h1 data-t="title"></h1>
+      <p data-t="subtitle"></p>
+    </div>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" data-lang="it" aria-pressed="false">IT</button>
+      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+    </div>
+  </div>
+
+  <section id="intake">
+    <label class="drop" id="drop">
+      <input type="file" id="file" accept="application/pdf,.pdf" class="sr">
+      <span class="ic" aria-hidden="true">📄</span>
+      <b data-t="dropTitle"></b>
+      <span data-t="dropSub"></span>
+    </label>
+    <p class="privacy" data-t="privacy"></p>
+    <div class="actions">
+      <button type="button" class="btn" id="btnManual" data-t="manualBtn"></button>
+      <button type="button" class="btn" id="btnAi" hidden data-t="aiBtn"></button>
+      <button type="button" class="btn" id="btnStop" hidden data-t="stop"></button>
+    </div>
+    <div class="status" id="status" role="status" aria-live="polite"></div>
+    <div id="manualWrap"></div>
+  </section>
+
+  <main id="report"></main>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+<script>
+// DATEV payslip parser: input = array of pages, each = array of {str,x,y,w}
+(function(root){
+const DE_PAGE = /Abrechnung der Brutto\/Netto-Bez/;
+const EN_PAGE = /Pay Advice/;
+const MONTHS = {januar:1,februar:2,'märz':3,maerz:3,april:4,mai:5,juni:6,juli:7,august:8,september:9,oktober:10,november:11,dezember:12,
+ january:1,february:2,march:3,may:5,june:6,july:7,october:10,december:12};
+const L = {
+ de:{taxGross:'Steuer-Brutto',wageTax:'Lohnsteuer',church:'Kirchensteuer',soli:'Solidaritätszuschlag',
+   kvB:'KV-Brutto',rvB:'RV-Brutto',avB:'AV-Brutto',pvB:'PV-Brutto',kv:'KV-Beitrag',rv:'RV-Beitrag',av:'AV-Beitrag',pv:'PV-Beitrag',
+   totalGross:'Gesamt-Brutto',taxTot:'Steuerrechtliche Abzüge',svTot:'SV-rechtliche Abzüge',netInc:'Netto-Verdienst',payout:'Auszahlungsbetrag',
+   agSv:'SV-AG-Anteil',agAdd:'Zus. AG-Kosten',agTot:'Gesamtkosten',payHead:'Lohnart',netHead:'Netto-Bezüge/Netto-Abzüge',
+   ytd:{'Gesamt-Brutto':'gross','Steuer-Brutto':'taxGross','Lohnsteuer':'wageTax','Kirchensteuer':'church','Solidaritätszuschlag':'soli','Steuerfreie Bezüge':'taxFree',
+        'SV-Brutto':'svGross','KV-Beitrag':'kv','RV-Beitrag':'rv','AV-Beitrag':'av','PV-Beitrag':'pv'}},
+ en:{taxGross:'Taxable gross income',wageTax:'Wage tax',church:'Church tax',soli:'Solidarity surcharge',
+   kvB:'Contr.income(HI)',rvB:'Contr.income(PI)',avB:'Contr.income(UI)',pvB:'Contr.income(CI)',kv:'HI Contribution',rv:'PI Contribution',av:'UI Contribution',pv:'CI Contribution',
+   totalGross:'Total gross income',taxTot:'Tax deductions',svTot:'Soc. sec. deductions',netInc:'Net income',payout:'Net pay',
+   agSv:'Emp.soc.sec.contr.',agAdd:'Empl. cost, add.',agTot:'Total cost',payHead:'Wag. code',netHead:'Non-taxable/non-contributory payments and deductions',
+   ytd:{'Total gross income':'gross','Tax. gross income':'taxGross','Wage tax':'wageTax','Church tax':'church','Solidarity surcharge':'soli','Non-tax. payments':'taxFree',
+        'Contr. inc. (Soc.sec.)':'svGross','HI Contribution':'kv','PI Contribution':'rv','UI Contribution':'av','CI Contribution':'pv'}}
+};
+function num(s){
+  if(s==null) return null;
+  s=String(s).trim(); const neg=/-$/.test(s)||/^-/.test(s);
+  s=s.replace(/[^0-9.,]/g,'');
+  if(!s) return null;
+  let v;
+  if(s.includes(',')) v=parseFloat(s.replace(/\./g,'').replace(',','.'));
+  else v=parseInt(s.replace(/\./g,''),10)/100;   // DATEV prints some columns without the decimal comma
+  return isNaN(v)?null:(neg?-v:v);
+}
+const isNumTok = s => /^-?[\d.]+(,\d+)?-?(\s*[A-Z])?$/.test(s.trim());
+function find(items,label,opts={}){ return items.find(i=>i.str.trim()===label && (!opts.minY||i.y>opts.minY) && (!opts.maxY||i.y<opts.maxY)); }
+function findStarts(items,label){ return items.find(i=>i.str.trim().startsWith(label)); }
+// value directly under a header row label, matched to nearest column centre among that header row
+function underHeader(items,label,headerY){
+  const lab=items.find(i=>i.str.trim()===label && Math.abs(i.y-headerY)<2); if(!lab) return null;
+  const row=items.filter(i=>Math.abs(i.y-headerY)<2 && i.str.trim().length>2);
+  const cands=items.filter(i=>i.y<headerY-6 && i.y>headerY-22 && isNumTok(i.str));
+  const c=i=>i.x+i.w/2;
+  let best=null;
+  for(const v of cands){
+    const nearest=row.reduce((a,b)=>Math.abs(c(b)-c(v))<Math.abs(c(a)-c(v))?b:a);
+    if(nearest===lab){ if(!best||Math.abs(c(v)-c(lab))<Math.abs(c(best)-c(lab))) best=v; }
+  }
+  return best;
+}
+function sameRowRight(items,lab,xMin,xMax){
+  return items.filter(i=>Math.abs(i.y-lab.y)<3 && i.x>=xMin && i.x<=xMax && isNumTok(i.str)).sort((a,b)=>a.x-b.x)[0]||null;
+}
+function parse(pages){
+  let page=pages.find(p=>p.some(i=>DE_PAGE.test(i.str))), lang='de';
+  if(!page){ page=pages.find(p=>p.some(i=>EN_PAGE.test(i.str))); lang='en'; }
+  if(!page) return {ok:false, reason:'not_datev'};
+  const T=L[lang], it=page, out={ok:true,lang,warnings:[]};
+  // header
+  const per=it.find(i=>/^(für|for)\s+\S+\s+\d{4}$/i.test(i.str.trim()));
+  if(per){ const m=per.str.trim().match(/^(?:für|for)\s+(\S+)\s+(\d{4})$/i); out.month=MONTHS[m[1].toLowerCase()]||null; out.year=+m[2]; }
+  const dateIt=it.find(i=>/^\d{2}[./]\d{2}[./]\d{4}$/.test(i.str.trim())); out.payDate=dateIt?dateIt.str.trim().replace(/\//g,'.'):null;
+  const idRow=it.find(i=>/^\d{5}\s+\d{6}\s+\d/.test(i.str.trim()));
+  if(idRow){ const p=idRow.str.trim().split(/\s+/); out.taxClass=+p[2]; out.birth=p[1]; }
+  const kkRow=it.find(i=>/^\d{7}\s+\d{4}\s+\d\s+\d{1,2}$/.test(i.str.trim()));
+  if(kkRow){ const m=kkRow.str.trim().match(/^(\d{2})(\d{2})(\d{3})\s+(\d{4})/); out.kvRateTotal=+(m[1]+'.'+m[2]); out.pgrs=m[3]; out.bgrs=m[4]; }
+  const insRow=it.find(i=>/^\d{8}[A-Z]\d{3}\s+/.test(i.str.trim()));
+  if(insRow) out.insurer=insRow.str.trim().replace(/^\S+\s+/,'');
+  const startRow=it.find(i=>/^\d{6}$/.test(i.str.trim()) && i.x>300 && i.x<360 && i.y>700);
+  if(startRow){ const s=startRow.str.trim(); out.startDate=s.slice(0,2)+'.'+s.slice(2,4)+'.20'+s.slice(4); }
+  const nameIt=it.find(i=>i.x<120 && i.y>640 && i.y<690 && /^[A-ZÄÖÜ][a-zäöüß]+(\s[A-ZÄÖÜ][a-zäöüß-]+)+$/.test(i.str.trim()) && !/GmbH/.test(i.str));
+  out.name=nameIt?nameIt.str.trim():null;
+  const emp=it.find(i=>/\*/.test(i.str) && /(GmbH|AG|KG|SE|UG|e\.V\.)/.test(i.str));
+  if(emp) out.employer=emp.str.split('*').slice(0,1).join('').trim(), out.employerCity=(emp.str.split('*').pop()||'').replace(/^\d{5}\s*/,'').trim();
+  // tax + social security rows
+  const tg=find(it,T.taxGross,{maxY:420,minY:250});
+  if(tg){ const y=tg.y;
+    for(const [k,lab] of [['taxGross',T.taxGross],['wageTax',T.wageTax],['church',T.church],['soli',T.soli]]){ const v=underHeader(it,lab,y); out[k]=v?num(v.str):0; } }
+  const kvb=find(it,T.kvB,{maxY:420,minY:200});
+  if(kvb){ const y=kvb.y;
+    for(const [k,lab] of [['kvGross',T.kvB],['rvGross',T.rvB],['avGross',T.avB],['pvGross',T.pvB],['kv',T.kv],['rv',T.rv],['av',T.av],['pv',T.pv]]){
+      const v=underHeader(it,lab,y); out[k]=v?num(v.str):0; if(v&&/Z\s*$/.test(v.str)) out.childlessFlag=true; }
+    if(it.some(i=>Math.abs(i.y-(y-14))<4 && /^\s*Z\s*$/.test(i.str))) out.childlessFlag=true;
+  }
+  // right column totals: value is the number at x>480 just below the label
+  const rightTotal=lab=>{ const l=it.find(i=>i.str.trim()===lab && i.x>470); if(!l) return null;
+    const v=it.filter(i=>i.x>480 && i.y<l.y-4 && i.y>l.y-22 && isNumTok(i.str)).sort((a,b)=>b.y-a.y)[0]; return v?num(v.str):null; };
+  out.totalGross=rightTotal(T.totalGross); out.taxTotal=rightTotal(T.taxTot); out.svTotal=rightTotal(T.svTot);
+  out.netIncome=rightTotal(T.netInc); out.payout=rightTotal(T.payout);
+  // employer cost row
+  for(const [k,lab] of [['agSv',T.agSv],['agAdd',T.agAdd],['agTotal',T.agTot]]){
+    const l=it.find(i=>i.str.trim()===lab); if(!l){out[k]=null;continue;}
+    const v=underHeader(it,lab,l.y); out[k]=v?num(v.str):null; }
+  // payments (gross lines)
+  const ph=it.find(i=>i.str.trim()===T.payHead && i.y>420);
+  out.payments=[];
+  if(ph){ const bottom=(tg?tg.y:350)+15;
+    const rows=it.filter(i=>i.x<120 && i.y<ph.y-4 && i.y>bottom && /^\d{3,4}\s+\S/.test(i.str.trim()));
+    for(const r of rows.sort((a,b)=>b.y-a.y)){
+      const amt=it.filter(i=>Math.abs(i.y-r.y)<3 && i.x>480 && isNumTok(i.str))[0];
+      const flags=it.filter(i=>Math.abs(i.y-r.y)<3 && i.x>420 && i.x<480 && /^[A-Z]$/.test(i.str.trim())).sort((a,b)=>a.x-b.x).map(i=>i.str.trim());
+      const m=r.str.trim().match(/^(\d{3,4})\s+(.*)$/);
+      out.payments.push({code:m[1],label:m[2],amount:amt?num(amt.str):null,tax:flags[0]||'',sv:flags[1]||'',gb:flags[2]||''});
+    } }
+  // net deductions / additions
+  const nh=it.find(i=>i.str.trim()===T.netHead);
+  out.netItems=[];
+  if(nh){ const rows=it.filter(i=>i.x>280 && i.x<480 && i.y<nh.y-4 && i.y>100 && /^\d{3,4}\s+\S/.test(i.str.trim()));
+    for(const r of rows.sort((a,b)=>b.y-a.y)){
+      const amt=it.filter(i=>Math.abs(i.y-r.y)<3 && i.x>480 && isNumTok(i.str))[0];
+      const m=r.str.trim().match(/^(\d{3,4})\s+(.*)$/);
+      out.netItems.push({code:m[1],label:m[2],amount:amt?num(amt.str):null}); } }
+  // year to date
+  out.ytd={};
+  const ytdTop=nh?nh.y:260;
+  for(const [lab,key] of Object.entries(T.ytd)){
+    const l=it.find(i=>i.str.trim()===lab && i.y<ytdTop+2 && i.y>110 && i.x<260); if(!l) continue;
+    const xmin=l.x<100?95:220, xmax=l.x<100?175:290;
+    const v=sameRowRight(it,l,xmin,xmax); out.ytd[key]=v?num(v.str):0; }
+  // sanity
+  if(out.totalGross==null||out.payout==null) out.warnings.push('missing_totals');
+  const sumPay=out.payments.reduce((a,p)=>a+(p.amount||0),0);
+  if(out.totalGross!=null && Math.abs(sumPay-out.totalGross)>0.02) out.warnings.push('gross_mismatch');
+  const net=(out.totalGross||0)-(out.taxTotal||0)-(out.svTotal||0);
+  if(out.netIncome!=null && Math.abs(net-out.netIncome)>0.02) out.warnings.push('net_mismatch');
+  const pay=(out.netIncome||0)+out.netItems.reduce((a,p)=>a+(p.amount||0),0);
+  if(out.payout!=null && Math.abs(pay-out.payout)>0.02) out.warnings.push('payout_mismatch');
+  return out;
+}
+root.DatevParser={parse,num};
+})(typeof window!=='undefined'?window:globalThis);
+
+</script>
+<script>
+(function(){
+"use strict";
+/* ---------- i18n ---------- */
+const S = {
+it:{
+ title:"Busta paga spiegata",
+ subtitle:"Carica la tua busta paga tedesca in PDF e ottieni una pagina che spiega ogni voce: lordo, tasse, contributi e netto.",
+ dropTitle:"Trascina qui il PDF della busta paga",
+ dropSub:"oppure tocca per sceglierlo · ottimizzato per cedolini DATEV",
+ privacy:"Il PDF viene letto solo nel tuo browser: non viene caricato né salvato da nessuna parte. Solo se usi “Leggi con Claude” le immagini delle pagine vengono inviate a Claude.",
+ manualBtn:"Inserisci i valori a mano", aiBtn:"Leggi con Claude", stop:"Interrompi",
+ reading:"Leggo il PDF…", parsed:"Busta paga DATEV letta.", notDatev:"Non riconosco questo formato come cedolino DATEV. Puoi farlo leggere a Claude oppure inserire i valori a mano.",
+ notDatevNoAi:"Non riconosco questo formato come cedolino DATEV. Puoi inserire i valori a mano.",
+ pdfErr:"Non riesco ad aprire questo file. È un PDF valido e non protetto da password?", noText:"Il PDF non contiene testo leggibile (forse è una scansione).",
+ aiThinking:"Claude sta leggendo la busta paga… può richiedere fino a un minuto.", aiDone:"Letta da Claude: confronta i numeri principali con il tuo cedolino.",
+ aiErr:"Claude non è riuscito a leggere la busta paga. Prova a inserire i valori a mano.", aiRate:"Troppe richieste in poco tempo: riprova tra qualche minuto.",
+ aiDenied:"Lettura con Claude non autorizzata.", aiNoImg:"Questa pagina non può inviare immagini a Claude qui.", cancelled:"Lettura interrotta.",
+ warnTotals:"Alcuni totali non tornano esattamente: controlla i valori con il cedolino.",
+ srcDatev:"letta da PDF DATEV", srcAi:"letta da Claude", srcManual:"inserita a mano",
+ newSlip:"Nuova busta paga", download:"Scarica come HTML", saved:"File salvato.",
+ period:"Periodo", payDate:"Pagata il", employer:"Datore di lavoro", since:"Assunto dal",
+ grossT:"STIPENDIO LORDO", grossSub:"Gesamt-Brutto", dedT:"TASSE E CONTRIBUTI", dedSub:"Steuer- und SV-Abzüge", ofWhich:"di cui", tap:"Tocca per i dettagli", tapS:"Tocca",
+ netT:"ACCREDITATO SUL CONTO", netSub:"Auszahlungsbetrag",
+ fGross:"Lordo", fTax:"Tasse", fSv:"Contributi", fNet:"Netto", fOther:"Altre voci",
+ splitT:"Come si divide il lordo", splitLead:(p)=>`Su ogni 100 € di lordo, circa ${p} € arrivano sul tuo conto.`,
+ sPaid:"Accreditato", sTax:"Tasse", sSv:"Contributi sociali", sDed:"Trattenute dopo il netto",
+ wageTax:"Imposta sul reddito", soli:"Contributo di solidarietà", church:"Imposta ecclesiastica",
+ kv:"Assicurazione sanitaria", rv:"Assicurazione pensionistica", av:"Assicurazione disoccupazione", pv:"Assicurazione non autosufficienza",
+ wageTaxBody:(cl,b,r)=>`Imposta trattenuta ogni mese e versata al Finanzamt. Calcolata sul lordo imponibile di ${b} con la classe d’imposta ${cl}. Aliquota effettiva su questo mese: ${r}.`,
+ wageTaxNote:"È un acconto: con la dichiarazione dei redditi (Steuererklärung) le spese di lavoro possono farti recuperare una parte.",
+ soliZero:"Sovrattassa del 5,5% sull’imposta, dovuta solo dai redditi alti. Sei sotto la soglia, quindi non la paghi.",
+ soliBody:"Sovrattassa sull’imposta sul reddito, dovuta sopra una certa soglia (con una zona di raccordo graduale).",
+ churchZero:"Dovuta solo dagli iscritti a una chiesa che riscuote l’imposta (8–9% dell’imposta sul reddito). Qui non viene trattenuta.",
+ churchBody:"Imposta per gli iscritti a una chiesa: 8% dell’imposta sul reddito in Baviera e Baden-Württemberg, 9% altrove.",
+ kvBody:(tot,emp)=>`Assicurazione sanitaria pubblica. Aliquota totale ${tot} (14,6% generale + contributo aggiuntiva della cassa), divisa a metà: paghi tu ${emp}.`,
+ kvBodyNoRate:"Assicurazione sanitaria pubblica: l’aliquota totale (14,6% + contributo aggiuntivo della cassa) è divisa a metà tra te e il datore di lavoro.",
+ capNote:(b)=>`Calcolata su ${b}, non su tutto lo stipendio: è il tetto mensile di contribuzione (Beitragsbemessungsgrenze). Sopra questa cifra non si paga.`,
+ rvBody:"Contributo alla pensione pubblica (Deutsche Rentenversicherung). Aliquota totale 18,6%, divisa a metà: 9,3% a te e 9,3% al datore di lavoro.",
+ avBody:"Finanzia l’indennità di disoccupazione (Arbeitslosengeld). Aliquota totale 2,6%, divisa a metà: 1,3% a te.",
+ pvBody:(r,kind)=>`Copre le cure in caso di non autosufficienza. La tua quota è ${r}${kind}.`,
+ pvChildless:" (1,8% + 0,6% di supplemento per chi non ha figli, indicato con la Z sul cedolino)", pvChild:" (1,8%, con figli)", pvKids:" (ridotta per più figli sotto i 25 anni)", pvSax:" (aliquota della Sassonia)",
+ checkOk:"✓ Il calcolo torna", checkWarn:(e)=>`⚠ Non torna: atteso ${e}`,
+ netBody:"Le voci dopo il netto (per esempio mensa, bici aziendale, anticipi) vengono tolte o aggiunte dopo tasse e contributi.",
+ infoClass:"Classe d’imposta", infoClassBody:(c)=>({1:"Classe 1: single o separati.",2:"Classe 2: genitore single.",3:"Classe 3: sposati, il coniuge con reddito più alto (l’altro in classe 5).",4:"Classe 4: sposati con redditi simili.",5:"Classe 5: sposati, coniuge con reddito più basso.",6:"Classe 6: secondo lavoro."}[c]||"Determina quanta imposta viene trattenuta ogni mese."),
+ infoIns:"Cassa malattia", infoInsBody:(r)=>r?`Aliquota totale ${r}, inclusa la quota aggiuntiva della tua cassa.`:"La tua cassa malattia pubblica.",
+ infoAg:"Contributi dell’azienda", infoAgBody:"Oltre al tuo lordo, l’azienda paga la sua metà di pensione, sanità, disoccupazione e non autosufficienza. Non compare nel netto ma conta per pensione e prestazioni.",
+ infoCost:"Costo totale per l’azienda", infoCostBody:(g,a,b)=>`Lordo ${g} + contributi azienda ${a}${b?` + altri oneri ${b} (assicurazioni per malattia, maternità e insolvenza, Umlagen)`:""}.`,
+ ytdT:"Da inizio anno", ytdLead:"Totali progressivi dal blocco Verdienstbescheinigung.", item:"Voce", term:"Termine tedesco", month:"Questo mese", ytdCol:"Da inizio anno",
+ yGross:"Lordo totale", yTaxGross:"Lordo imponibile", yTaxFree:"Voci esenti", yWage:"Imposta sul reddito", ySoli:"Solidarietà", yChurch:"Imposta ecclesiastica", ySvGross:"Base contributiva", yKv:"Sanitaria", yRv:"Pensionistica", yAv:"Disoccupazione", yPv:"Non autosufficienza",
+ glossT:"Le sigle del cedolino",
+ gloss:[["St / SV: L","Voce regolare (laufender Bezug), tassata e soggetta a contributi."],["St / SV: F","Voce esente da tasse e contributi (frei)."],["St / SV: S · E","Pagamento una tantum (sonstiger Bezug / Einmalbezug), es. bonus."],["GB: J","La voce fa parte del lordo totale."],["Z","Supplemento per chi non ha figli nell’assicurazione non autosufficienza."],["KK %","Aliquota totale della cassa malattia, incluso il contributo aggiuntivo."],["PGRS 101","Gruppo di persone: dipendente regolare soggetto a contributi."],["BGRS 1111","Contributi a tutte e quattro le assicurazioni sociali."],["St.-Tg. / SV-Tg.","Giorni considerati per tasse e contributi nel mese."],["§ 108 GewO","È il prospetto paga obbligatorio per legge: conservalo."]],
+ foot:"Spiegazione basata sulle cifre del cedolino e sulle aliquote 2026. Non è una consulenza fiscale: per casi specifici chiedi all’ufficio paghe o a un consulente fiscale (Steuerberater).",
+ pay:{salary:["Stipendio base","Il tuo stipendio mensile regolare."],travel:["Rimborso spese di viaggio","Rimborso per tragitto casa-lavoro o trasferte. Se esente (F), non paghi tasse né contributi su questa cifra."],
+  holiday:["Indennità ferie","Urlaubsgeld: pagamento extra legato alle ferie, di solito tassato come una tantum."],xmas:["Tredicesima / gratifica natalizia","Weihnachtsgeld: pagamento extra di fine anno, tassato come una tantum."],
+  bonus:["Bonus","Premio o bonus, tassato come pagamento una tantum (sonstiger Bezug)."],overtime:["Straordinari","Ore extra o supplementi pagati questo mese."],
+  pension:["Pensione aziendale (conversione)","Entgeltumwandlung: parte del lordo versata nella pensione aziendale, esente da tasse e contributi entro i limiti di legge."],
+  vwl:["Contributo risparmio (VWL)","Vermögenswirksame Leistungen: contributo del datore di lavoro a un piano di risparmio."],benefit:["Benefit in natura","Sachbezug: buoni o benefit esenti fino a 50 € al mese."],
+  car:["Auto aziendale","Valore dell’uso privato dell’auto aziendale (geldwerter Vorteil): aumenta le tasse ma non viene pagato in contanti."],surcharge:["Maggiorazione","Supplemento per lavoro notturno, festivo o domenicale."],
+  generic:["Voce di stipendio","Voce del lordo indicata sul cedolino."]},
+ net:{lunch:["Mensa","La tua quota per i pasti in mensa o i buoni pasto."],bike:["Bici aziendale","Rata del leasing della bici (JobRad) trattenuta dal netto."],advance:["Anticipo","Restituzione di un anticipo già ricevuto."],seizure:["Pignoramento","Somma trattenuta per un pignoramento dello stipendio."],generic:["Trattenuta dopo il netto","Voce tolta o aggiunta dopo tasse e contributi."]},
+ flagReg:"Regolare, tassata e soggetta a contributi.", flagFree:"Esente da tasse e contributi.", flagOne:"Pagamento una tantum: tassato con un metodo annuale.",
+ mTitle:"Inserisci i valori a mano", mLead:"Copia gli importi mensili dal cedolino. Lascia vuoto quello che non c’è.", mMonth:"Mese", mYear:"Anno", mEmployer:"Datore di lavoro (facoltativo)",
+ mClass:"Classe d’imposta", mKk:"Aliquota totale cassa malattia (KK %)", mChildless:"Nessun figlio (supplemento non autosufficienza)",
+ mGross:"Voci lorde", mSalary:"Stipendio base lordo", mOther:"Altre voci tassate (bonus, straordinari…)", mFree:"Voci esenti (rimborsi, benefit…)",
+ mTaxes:"Tasse", mSv:"Contributi sociali (quota tua)", mAfter:"Dopo il netto", mDed:"Trattenute dopo il netto (es. mensa)", mPayout:"Importo accreditato (facoltativo)", mAgSv:"Contributi azienda (SV-AG-Anteil, facoltativo)",
+ mGo:"Mostra la spiegazione", mCancel:"Chiudi",
+ months:["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"]
+},
+en:{
+ title:"Payslip explained",
+ subtitle:"Upload your German payslip as a PDF and get a page that explains every line: gross pay, taxes, contributions and net pay.",
+ dropTitle:"Drop your payslip PDF here",
+ dropSub:"or tap to choose it · optimised for DATEV payslips",
+ privacy:"The PDF is read only in your browser: it isn’t uploaded or stored anywhere. Only if you use “Read with Claude” are images of the pages sent to Claude.",
+ manualBtn:"Enter values by hand", aiBtn:"Read with Claude", stop:"Stop",
+ reading:"Reading the PDF…", parsed:"DATEV payslip read.", notDatev:"I don’t recognise this as a DATEV payslip. You can have Claude read it or enter the values by hand.",
+ notDatevNoAi:"I don’t recognise this as a DATEV payslip. You can enter the values by hand.",
+ pdfErr:"I can’t open this file. Is it a valid PDF without a password?", noText:"This PDF has no readable text (it may be a scan).",
+ aiThinking:"Claude is reading the payslip… this can take up to a minute.", aiDone:"Read by Claude: check the main figures against your payslip.",
+ aiErr:"Claude couldn’t read the payslip. Try entering the values by hand.", aiRate:"Too many requests in a short time: try again in a few minutes.",
+ aiDenied:"Reading with Claude wasn’t allowed.", aiNoImg:"This page can’t send images to Claude here.", cancelled:"Reading stopped.",
+ warnTotals:"Some totals don’t add up exactly: check the values against your payslip.",
+ srcDatev:"read from DATEV PDF", srcAi:"read by Claude", srcManual:"entered by hand",
+ newSlip:"New payslip", download:"Download as HTML", saved:"File saved.",
+ period:"Period", payDate:"Paid on", employer:"Employer", since:"Employed since",
+ grossT:"GROSS PAY", grossSub:"Gesamt-Brutto", dedT:"TAXES & CONTRIBUTIONS", dedSub:"Steuer- und SV-Abzüge", ofWhich:"of which", tap:"Tap for details", tapS:"Tap",
+ netT:"PAID TO YOUR ACCOUNT", netSub:"Auszahlungsbetrag",
+ fGross:"Gross", fTax:"Tax", fSv:"Social security", fNet:"Net", fOther:"Other items",
+ splitT:"How your gross splits up", splitLead:(p)=>`For every €100 of gross pay, about €${p} reaches your account.`,
+ sPaid:"Paid out", sTax:"Taxes", sSv:"Social security", sDed:"Deductions after net",
+ wageTax:"Income tax", soli:"Solidarity surcharge", church:"Church tax",
+ kv:"Health insurance", rv:"Pension insurance", av:"Unemployment insurance", pv:"Long-term care insurance",
+ wageTaxBody:(cl,b,r)=>`Withheld every month and paid to the tax office. Calculated on taxable gross of ${b} using tax class ${cl}. Effective rate this month: ${r}.`,
+ wageTaxNote:"It’s an advance: filing a tax return (Steuererklärung) can get some back through work expenses.",
+ soliZero:"A 5.5% surcharge on income tax, only for high earners. You’re below the threshold, so you pay nothing.",
+ soliBody:"A surcharge on income tax above a threshold (phased in gradually).",
+ churchZero:"Only due for members of a tax-collecting church (8–9% of income tax). None is withheld here.",
+ churchBody:"Tax for church members: 8% of income tax in Bavaria and Baden-Württemberg, 9% elsewhere.",
+ kvBody:(tot,emp)=>`Public health insurance. Total rate ${tot} (14.6% general + your insurer’s additional contribution), split in half: you pay ${emp}.`,
+ kvBodyNoRate:"Public health insurance: the total rate (14.6% + your insurer’s additional contribution) is split in half between you and your employer.",
+ capNote:(b)=>`Calculated on ${b}, not your full salary: that’s the monthly contribution ceiling (Beitragsbemessungsgrenze). Nothing is charged above it.`,
+ rvBody:"Your contribution to the state pension (Deutsche Rentenversicherung). Total rate 18.6%, split in half: 9.3% from you and 9.3% from your employer.",
+ avBody:"Funds unemployment benefit (Arbeitslosengeld). Total rate 2.6%, split in half: 1.3% from you.",
+ pvBody:(r,kind)=>`Covers care if you can no longer look after yourself. Your share is ${r}${kind}.`,
+ pvChildless:" (1.8% + a 0.6% surcharge for people without children, marked Z on the payslip)", pvChild:" (1.8%, with children)", pvKids:" (reduced for several children under 25)", pvSax:" (Saxony rate)",
+ checkOk:"✓ The calculation checks out", checkWarn:(e)=>`⚠ Doesn’t match: expected ${e}`,
+ netBody:"Items after net pay (for example canteen, company bike, advances) are taken off or added after taxes and contributions.",
+ infoClass:"Tax class", infoClassBody:(c)=>({1:"Class 1: single or separated.",2:"Class 2: single parent.",3:"Class 3: married, higher-earning spouse (the other in class 5).",4:"Class 4: married with similar incomes.",5:"Class 5: married, lower-earning spouse.",6:"Class 6: second job."}[c]||"Decides how much tax is withheld each month."),
+ infoIns:"Health insurer", infoInsBody:(r)=>r?`Total rate ${r}, including your insurer’s additional contribution.`:"Your public health insurer.",
+ infoAg:"Employer’s contributions", infoAgBody:"On top of your gross, your employer pays its half of pension, health, unemployment and care insurance. It never shows in your pay but counts toward your pension and benefits.",
+ infoCost:"Total cost to employer", infoCostBody:(g,a,b)=>`Gross ${g} + employer contributions ${a}${b?` + other levies ${b} (sick pay, maternity and insolvency insurance, Umlagen)`:""}.`,
+ ytdT:"Year to date", ytdLead:"Running totals from the Verdienstbescheinigung block.", item:"Item", term:"German term", month:"This month", ytdCol:"Year so far",
+ yGross:"Total gross", yTaxGross:"Taxable gross", yTaxFree:"Tax-free payments", yWage:"Income tax", ySoli:"Solidarity surcharge", yChurch:"Church tax", ySvGross:"Social security base", yKv:"Health", yRv:"Pension", yAv:"Unemployment", yPv:"Long-term care",
+ glossT:"Codes on the payslip",
+ gloss:[["St / SV: L","Regular payment (laufender Bezug), taxed and subject to contributions."],["St / SV: F","Free of tax and contributions (frei)."],["St / SV: S · E","One-off payment (sonstiger Bezug / Einmalbezug), e.g. a bonus."],["GB: J","The line is part of total gross."],["Z","Care insurance surcharge for people without children."],["KK %","Your health insurer’s total rate, including the additional contribution."],["PGRS 101","Person group: regular employee subject to contributions."],["BGRS 1111","Contributions to all four social insurances."],["St.-Tg. / SV-Tg.","Days counted for tax and social security this month."],["§ 108 GewO","This is the legally required pay statement: keep it."]],
+ foot:"Explanation based on the figures on your payslip and 2026 rates. Not tax advice: for your specific situation, ask payroll or a tax adviser (Steuerberater).",
+ pay:{salary:["Base salary","Your regular monthly salary."],travel:["Travel allowance","Reimbursement for commuting or business travel. If free (F), no tax or contributions are due on it."],
+  holiday:["Holiday pay","Urlaubsgeld: an extra payment tied to holidays, usually taxed as a one-off."],xmas:["Christmas bonus","Weihnachtsgeld: an extra year-end payment, taxed as a one-off."],
+  bonus:["Bonus","A bonus or premium, taxed as a one-off payment (sonstiger Bezug)."],overtime:["Overtime","Extra hours or surcharges paid this month."],
+  pension:["Company pension (salary conversion)","Entgeltumwandlung: part of your gross paid into a company pension, free of tax and contributions up to legal limits."],
+  vwl:["Savings contribution (VWL)","Vermögenswirksame Leistungen: an employer contribution to a savings plan."],benefit:["Benefit in kind","Sachbezug: vouchers or benefits, tax-free up to €50 a month."],
+  car:["Company car","The value of private use of a company car (geldwerter Vorteil): raises tax but isn’t paid out as cash."],surcharge:["Surcharge","Extra pay for night, Sunday or holiday work."],
+  generic:["Pay item","A gross pay line from the payslip."]},
+ net:{lunch:["Canteen","Your share for canteen meals or meal vouchers."],bike:["Company bike","Bike leasing instalment (JobRad) deducted from net pay."],advance:["Advance","Repayment of an advance you already received."],seizure:["Wage garnishment","An amount withheld for a garnishment order."],generic:["Deduction after net","An item taken off or added after taxes and contributions."]},
+ flagReg:"Regular, taxed and subject to contributions.", flagFree:"Free of tax and contributions.", flagOne:"One-off payment: taxed with an annual method.",
+ mTitle:"Enter values by hand", mLead:"Copy the monthly amounts from your payslip. Leave blank whatever isn’t there.", mMonth:"Month", mYear:"Year", mEmployer:"Employer (optional)",
+ mClass:"Tax class", mKk:"Health insurer total rate (KK %)", mChildless:"No children (care insurance surcharge)",
+ mGross:"Gross pay", mSalary:"Base gross salary", mOther:"Other taxed items (bonus, overtime…)", mFree:"Tax-free items (reimbursements, benefits…)",
+ mTaxes:"Taxes", mSv:"Social security (your share)", mAfter:"After net pay", mDed:"Deductions after net (e.g. canteen)", mPayout:"Amount paid out (optional)", mAgSv:"Employer contributions (SV-AG-Anteil, optional)",
+ mGo:"Show the explanation", mCancel:"Close",
+ months:["January","February","March","April","May","June","July","August","September","October","November","December"]
+}};
+let lang = "it";
+try{ const s=localStorage.getItem("payslip.lang"); if(s==="it"||s==="en") lang=s; else if(!/^it/i.test(navigator.language||"")) lang="en"; }catch(e){ if(!/^it/i.test(navigator.language||"")) lang="en"; }
+const t = (k)=>S[lang][k];
+const $ = (id)=>document.getElementById(id);
+const esc = (s)=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const loc = ()=> lang==="it" ? "it-IT" : "en-GB";
+const eur = (v)=> v==null||isNaN(v) ? "–" : "€ " + Number(v).toLocaleString(loc(),{minimumFractionDigits:2,maximumFractionDigits:2});
+const pct = (v,d=2)=> (Number(v)).toLocaleString(loc(),{minimumFractionDigits:d,maximumFractionDigits:d})+"%";
+
+function applyStatic(){
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-t]").forEach(el=>{ const v=t(el.dataset.t); if(typeof v==="string") el.textContent=v; });
+  document.querySelectorAll(".lang button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.lang===lang)));
+}
+document.querySelectorAll(".lang button").forEach(b=>b.addEventListener("click",()=>{
+  lang=b.dataset.lang; try{localStorage.setItem("payslip.lang",lang);}catch(e){}
+  applyStatic(); if(current) render(current); if($("manualForm")) openManual(true); if(lastStatus) setStatus(lastStatus.key,lastStatus.err);
+}));
+
+let lastStatus=null;
+function setStatus(key,err){ lastStatus=key?{key,err}:null; const el=$("status"); el.textContent = key ? t(key) : ""; el.className = "status"+(err?" err":""); }
+
+/* ---------- capabilities ---------- */
+let sample=null, downloads=null;
+(async()=>{
+  if(!window.claude || typeof window.claude.use!=="function") return;
+  try{ downloads = await window.claude.use("downloads"); }catch(e){}
+  try{ sample = await window.claude.use("sample"); }catch(e){}
+  if(sample && typeof sample.limits==="function"){ try{ const l=await sample.limits(); if(!l || !l.images) sample=null; }catch(e){} }
+  updateAiBtn(); if(current) render(current);
+})();
+let lastPdf=null, aiCtl=null;
+function updateAiBtn(){ $("btnAi").hidden = !(sample && lastPdf && (!current || current.source!=="datev")); }
+
+/* ---------- PDF reading ---------- */
+const drop=$("drop"), fileIn=$("file");
+["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over");}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over");}));
+drop.addEventListener("drop",e=>{ const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) handleFile(f); });
+fileIn.addEventListener("change",()=>{ const f=fileIn.files&&fileIn.files[0]; if(f) handleFile(f); fileIn.value=""; });
+
+async function handleFile(f){
+  current=null; $("report").innerHTML=""; lastPdf=null; updateAiBtn();
+  setStatus("reading");
+  try{
+    if(!window.pdfjsLib) throw new Error("pdfjs missing");
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    const buf=new Uint8Array(await f.arrayBuffer());
+    const doc=await window.pdfjsLib.getDocument({data:buf,isEvalSupported:false,disableFontFace:true,useSystemFonts:true}).promise;
+    lastPdf=doc;
+    const pages=[];
+    for(let p=1;p<=Math.min(doc.numPages,6);p++){
+      const pg=await doc.getPage(p); const tc=await pg.getTextContent();
+      pages.push(tc.items.filter(i=>i.str&&i.str.trim()).map(i=>({str:i.str,x:i.transform[4],y:i.transform[5],w:i.width||0})));
+    }
+    const anyText = pages.some(p=>p.length>5);
+    const r = anyText ? window.DatevParser.parse(pages) : {ok:false};
+    if(r.ok && r.totalGross!=null && r.payout!=null){
+      r.source="datev"; current=normalize(r); setStatus(null); updateAiBtn(); render(current);
+      $("report").scrollIntoView({behavior:"smooth",block:"start"});
+    } else {
+      updateAiBtn();
+      setStatus(!anyText ? "noText" : (sample ? "notDatev" : "notDatevNoAi"), true);
+    }
+  }catch(e){ console.error(e); setStatus("pdfErr",true); }
+}
+
+/* ---------- AI reading ---------- */
+const AI_PROMPT = `You are reading a German payslip (Entgeltabrechnung / Brutto-Netto-Abrechnung) shown in the attached page images.
+Return ONLY a JSON object, no prose, with exactly these keys (numbers in euros as plain decimals with a dot, monthly values; use null when a value is not printed):
+{"month":1-12,"year":2026,"payDate":"DD.MM.YYYY","employer":"company name","taxClass":1-6,"insurer":"health insurer name","kvRateTotal":number (KK % total health rate incl. additional contribution, e.g. 17.29),
+"childlessFlag":true|false (care insurance childless surcharge shown, e.g. 'Z' or 'kinderlos'),
+"payments":[{"code":"wage type code or empty","label":"line description as printed","amount":number,"tax":"L|S|E|F or empty","sv":"L|S|E|F or empty"}],
+"totalGross":number,"taxGross":number,"wageTax":number,"church":number,"soli":number,
+"kvGross":number,"rvGross":number,"avGross":number,"pvGross":number,"kv":number,"rv":number,"av":number,"pv":number,
+"taxTotal":number,"svTotal":number,"netIncome":number,
+"netItems":[{"code":"","label":"","amount":number (negative for deductions after net pay, positive for additions)}],
+"payout":number,"agSv":number,"agAdd":number,"agTotal":number,
+"ytd":{"gross":number,"taxGross":number,"taxFree":number,"wageTax":number,"church":number,"soli":number,"svGross":number,"kv":number,"rv":number,"av":number,"pv":number}}
+Gross pay lines go in "payments" (deductions such as salary conversion into a pension appear there as negative amounts if they reduce gross).
+Do NOT include the employee's name, address, tax ID, social security number or bank details.`;
+$("btnAi").addEventListener("click", async ()=>{
+  if(!sample || !lastPdf) return;
+  $("btnAi").disabled=true; $("btnStop").hidden=false; setStatus("aiThinking");
+  aiCtl=new AbortController();
+  try{
+    const imgs=[];
+    for(let p=1;p<=Math.min(lastPdf.numPages,3);p++){
+      const pg=await lastPdf.getPage(p); const vp=pg.getViewport({scale:1.7});
+      const cv=document.createElement("canvas"); cv.width=Math.ceil(vp.width); cv.height=Math.ceil(vp.height);
+      const ctx=cv.getContext("2d"); ctx.fillStyle="#fff"; ctx.fillRect(0,0,cv.width,cv.height);
+      await pg.render({canvasContext:ctx,viewport:vp}).promise;
+      imgs.push(await new Promise(res=>cv.toBlob(res,"image/png")));
+    }
+    const data = await sample.json(AI_PROMPT,{images:imgs.filter(Boolean),modelTier:"default",signal:aiCtl.signal});
+    if(!data || typeof data!=="object") throw {code:"bad_output"};
+    data.source="ai"; data.ok=true; data.warnings=[];
+    current=normalize(data); setStatus("aiDone"); updateAiBtn(); render(current);
+    $("report").scrollIntoView({behavior:"smooth",block:"start"});
+  }catch(e){
+    const c=e&&e.code;
+    if(c==="cancelled") setStatus("cancelled");
+    else if(c==="not_granted"){ setStatus("aiDenied",true); sample=null; updateAiBtn(); }
+    else if(c==="rate_limited") setStatus("aiRate",true);
+    else if(c==="images_unavailable"){ setStatus("aiNoImg",true); sample=null; updateAiBtn(); }
+    else setStatus("aiErr",true);
+  }finally{ $("btnAi").disabled=false; $("btnStop").hidden=true; aiCtl=null; }
+});
+$("btnStop").addEventListener("click",()=>{ if(aiCtl) aiCtl.abort(); });
+
+/* ---------- manual entry ---------- */
+const MF = [
+ ["mGross",[["salary","mSalary"],["other","mOther"],["free","mFree"]]],
+ ["mTaxes",[["wageTax","wageTax"],["soli","soli"],["church","church"]]],
+ ["mSv",[["kv","kv"],["rv","rv"],["av","av"],["pv","pv"]]],
+ ["mAfter",[["ded","mDed"],["payout","mPayout"],["agSv","mAgSv"]]]
+];
+let manualVals={month:new Date().getMonth()+1,year:new Date().getFullYear(),taxClass:1,kk:17.5,childless:true};
+function openManual(keep){
+  if(!keep && $("manualForm")){ $("manualWrap").innerHTML=""; return; }
+  const f=$("manualForm"); if(f) collectManual(f);
+  const v=manualVals, mo=t("months").map((m,i)=>`<option value="${i+1}"${v.month==i+1?" selected":""}>${m}</option>`).join("");
+  let h=`<form class="manual" id="manualForm" novalidate><h2>${esc(t("mTitle"))}</h2><p class="lead">${esc(t("mLead"))}</p>
+  <div class="grid">
+   <label>${esc(t("mMonth"))}<select name="month">${mo}</select></label>
+   <label>${esc(t("mYear"))}<input name="year" type="number" inputmode="numeric" value="${esc(v.year)}"></label>
+   <label>${esc(t("mEmployer"))}<input name="employer" type="text" value="${esc(v.employer||"")}"></label>
+   <label>${esc(t("mClass"))}<select name="taxClass">${[1,2,3,4,5,6].map(c=>`<option${v.taxClass==c?" selected":""}>${c}</option>`).join("")}</select></label>
+   <label>${esc(t("mKk"))}<input name="kk" type="number" step="0.01" inputmode="decimal" value="${esc(v.kk)}"></label>
+   <label class="chk"><input name="childless" type="checkbox"${v.childless?" checked":""}>${esc(t("mChildless"))}</label>
+  </div>`;
+  for(const [g,fields] of MF){
+    h+=`<fieldset><legend>${esc(t(g))}</legend><div class="grid">`+fields.map(([k,lab])=>`<label>${esc(t(lab))}<input name="${k}" type="number" step="0.01" inputmode="decimal" value="${v[k]!=null?esc(v[k]):""}"></label>`).join("")+`</div></fieldset>`;
+  }
+  h+=`<div class="actions"><button class="btn primary" type="submit">${esc(t("mGo"))}</button><button class="btn" type="button" id="mClose">${esc(t("mCancel"))}</button></div></form>`;
+  $("manualWrap").innerHTML=h;
+  $("mClose").addEventListener("click",()=>{ collectManual($("manualForm")); $("manualWrap").innerHTML=""; });
+  $("manualForm").addEventListener("submit",e=>{ e.preventDefault(); collectManual(e.target); buildManual(); });
+}
+function collectManual(f){
+  const fd=new FormData(f), o={};
+  for(const [k,val] of fd.entries()){ o[k]=val; }
+  o.childless = !!f.querySelector('[name="childless"]').checked;
+  manualVals=Object.assign(manualVals,o);
+}
+const nv=(s)=>{ if(s==null||s==="") return null; const v=parseFloat(String(s).replace(",",".")); return isNaN(v)?null:v; };
+function buildManual(){
+  const v=manualVals;
+  const payments=[];
+  if(nv(v.salary)) payments.push({code:"",label:lang==="it"?"Gehalt (stipendio)":"Gehalt (salary)",amount:nv(v.salary),tax:"L",sv:"L"});
+  if(nv(v.other)) payments.push({code:"",label:lang==="it"?"Altre voci tassate":"Other taxed items",amount:nv(v.other),tax:"S",sv:"S"});
+  if(nv(v.free)) payments.push({code:"",label:lang==="it"?"Voci esenti":"Tax-free items",amount:nv(v.free),tax:"F",sv:"F"});
+  const d={ok:true,source:"manual",warnings:[],month:+v.month,year:+v.year,employer:v.employer||null,taxClass:+v.taxClass,kvRateTotal:nv(v.kk),childlessFlag:!!v.childless,
+    payments,wageTax:nv(v.wageTax)||0,soli:nv(v.soli)||0,church:nv(v.church)||0,kv:nv(v.kv)||0,rv:nv(v.rv)||0,av:nv(v.av)||0,pv:nv(v.pv)||0,
+    netItems: nv(v.ded) ? [{code:"",label:lang==="it"?"Trattenute dopo il netto":"Deductions after net",amount:-Math.abs(nv(v.ded))}] : [],
+    payout:nv(v.payout),agSv:nv(v.agSv),ytd:{}};
+  const taxable=(nv(v.salary)||0)+(nv(v.other)||0); d.taxGross=taxable;
+  current=normalize(d); render(current); $("report").scrollIntoView({behavior:"smooth",block:"start"});
+}
+$("btnManual").addEventListener("click",()=>openManual(false));
+
+/* ---------- model ---------- */
+let current=null;
+function normalize(d){
+  const n=x=>(x==null||isNaN(x))?null:Number(x);
+  ["totalGross","taxGross","wageTax","church","soli","kvGross","rvGross","avGross","pvGross","kv","rv","av","pv","taxTotal","svTotal","netIncome","payout","agSv","agAdd","agTotal","kvRateTotal"].forEach(k=>d[k]=n(d[k]));
+  d.payments=(d.payments||[]).map(p=>({code:p.code||"",label:p.label||"",amount:n(p.amount)||0,tax:(p.tax||"").toUpperCase(),sv:(p.sv||"").toUpperCase(),gb:p.gb||""}));
+  d.netItems=(d.netItems||[]).map(p=>({code:p.code||"",label:p.label||"",amount:n(p.amount)||0}));
+  ["wageTax","church","soli","kv","rv","av","pv"].forEach(k=>{ if(d[k]==null) d[k]=0; });
+  if(d.totalGross==null) d.totalGross=d.payments.reduce((a,p)=>a+p.amount,0);
+  if(d.taxTotal==null) d.taxTotal=d.wageTax+d.church+d.soli;
+  if(d.svTotal==null) d.svTotal=d.kv+d.rv+d.av+d.pv;
+  if(d.netIncome==null) d.netIncome=d.totalGross-d.taxTotal-d.svTotal;
+  const ni=d.netItems.reduce((a,p)=>a+p.amount,0);
+  if(d.payout==null) d.payout=d.netIncome+ni;
+  if(d.taxGross==null) d.taxGross=d.payments.filter(p=>p.tax!=="F").reduce((a,p)=>a+p.amount,0);
+  if(d.agTotal==null && d.agSv!=null) d.agTotal=d.totalGross+d.agSv+(d.agAdd||0);
+  d.ytd=d.ytd||{};
+  const r2=x=>Math.round(x*100)/100;
+  if(Math.abs(r2(d.totalGross-d.taxTotal-d.svTotal)-r2(d.netIncome))>0.05 || Math.abs(r2(d.netIncome+ni)-r2(d.payout))>0.05) d.warnings=(d.warnings||[]).concat(["totals"]);
+  if(d.warnings && d.warnings.length) d.warnTotals=true;
+  return d;
+}
+function classifyPay(label){
+  const s=(label||"").toLowerCase();
+  if(/entgeltumwandlung|\bbav\b|direktversicherung|pensionskasse|pensionsfonds|altersvorsorge|deferred/.test(s)) return "pension";
+  if(/urlaubsgeld|holiday pay/.test(s)) return "holiday";
+  if(/weihnacht|christmas|13\.\s*gehalt/.test(s)) return "xmas";
+  if(/bonus|prämie|praemie|tantieme|erfolgsbeteiligung|incentive/.test(s)) return "bonus";
+  if(/überstund|ueberstund|overtime|mehrarbeit/.test(s)) return "overtime";
+  if(/zuschlag|nacht|sonntag|feiertag/.test(s)) return "surcharge";
+  if(/fahrt|travel|jobticket|deutschlandticket|reise/.test(s)) return "travel";
+  if(/vwl|vermögenswirksam|vermoegenswirksam/.test(s)) return "vwl";
+  if(/sachbezug|gutschein|benefit|voucher/.test(s)) return "benefit";
+  if(/dienstwagen|firmenwagen|company car|geldw|pkw/.test(s)) return "car";
+  if(/gehalt|salary|grundlohn|lohn|stipendio/.test(s)) return "salary";
+  return "generic";
+}
+function classifyNet(label){
+  const s=(label||"").toLowerCase();
+  if(/lunch|kantine|essen|mensa|canteen|meal/.test(s)) return "lunch";
+  if(/rad|bike|fahrrad|leasing/.test(s)) return "bike";
+  if(/vorschuss|advance|abschlag/.test(s)) return "advance";
+  if(/pfändung|pfaendung|garnish/.test(s)) return "seizure";
+  return "generic";
+}
+const flagText=f=> f==="F"?t("flagFree"): (f==="S"||f==="E"||f==="M")?t("flagOne"): f==="L"?t("flagReg"):"";
+
+/* ---------- render ---------- */
+function check(actual,expected){
+  if(expected==null||actual==null) return "";
+  return Math.abs(actual-expected)<=0.06 ? `<p class="chk-ok">${esc(t("checkOk"))}</p>` : `<p class="chk-warn">${esc(t("checkWarn")(eur(expected)))}</p>`;
+}
+function itemHTML({n,de,v,body,zero,short,cls}){
+  return `<details class="item${zero?" zero":""}${cls?" "+cls:""}"><summary><div class="n">${esc(n)}</div>${de?`<div class="de">${esc(de)}</div>`:""}<div class="v">${esc(v)}</div><div class="hint">${esc(short?t("tapS"):t("tap"))}</div></summary><div class="body">${body}</div></details>`;
+}
+function render(d){
+  const R=$("report");
+  const per = d.month ? `${t("months")[d.month-1]} ${d.year||""}` : (d.year||"");
+  const srcLabel = d.source==="datev"?t("srcDatev"):d.source==="ai"?t("srcAi"):t("srcManual");
+  let h=`<div class="rhead"><div><h2>${esc(per)}<span class="src">${esc(srcLabel)}</span></h2><div class="meta">`+
+    (d.employer?`<span>${esc(t("employer"))} <b>${esc(d.employer)}</b></span>`:"")+
+    (d.payDate?`<span>${esc(t("payDate"))} <b>${esc(d.payDate)}</b></span>`:"")+
+    (d.startDate?`<span>${esc(t("since"))} <b>${esc(d.startDate)}</b></span>`:"")+
+    `</div></div><div class="actions rtools"><button type="button" class="btn" id="btnNew">${esc(t("newSlip"))}</button>`+
+    (downloads?`<button type="button" class="btn" id="btnDl">${esc(t("download"))}</button>`:"")+`</div></div>`;
+  if(d.warnTotals) h+=`<div class="notice">${esc(t("warnTotals"))}</div>`;
+  if(d.source==="ai") h+=`<div class="notice">${esc(t("aiDone"))}</div>`;
+  // gross panel
+  h+=`<div class="top"><section class="panel gross"><div class="head"><div class="ttl">${esc(t("grossT"))}</div><div class="sub">${esc(t("grossSub"))}</div><div class="big">${esc(eur(d.totalGross))}</div></div><div class="ofwhich">${esc(t("ofWhich"))}</div>`;
+  for(const p of d.payments){
+    const k=classifyPay(p.label), [nm,ex]=t("pay")[k];
+    const fl=[...new Set([flagText(p.tax),flagText(p.sv)].filter(Boolean))].join(" ");
+    h+=itemHTML({n:nm,de:(p.code?p.code+" ":"")+p.label,v:eur(p.amount),body:`<p>${esc(ex)}</p>${fl?`<p>${esc(fl)}</p>`:""}`});
+  }
+  h+=`</section>`;
+  // deductions panel
+  const ded=d.taxTotal+d.svTotal;
+  h+=`<section class="panel ded"><div class="head"><div class="ttl">${esc(t("dedT"))}</div><div class="sub">${esc(t("dedSub"))}</div><div class="big">− ${esc(eur(ded))}</div></div><div class="ofwhich">${esc(t("ofWhich"))}</div>`;
+  const effTax = d.taxGross ? pct(d.wageTax/d.taxGross*100,1) : "–";
+  h+=itemHTML({n:t("wageTax"),de:"Lohnsteuer",v:eur(d.wageTax),body:`<p>${esc(t("wageTaxBody")(d.taxClass||"–",eur(d.taxGross),effTax))}</p><p>${esc(t("wageTaxNote"))}</p>`});
+  const isManual=d.source==="manual";
+  // KV
+  let kvBody="";
+  if(d.kvRateTotal){ const emp=d.kvRateTotal/2; kvBody=`<p>${esc(t("kvBody")(pct(d.kvRateTotal),pct(emp,3)))}</p>`;
+    if(d.kvGross){ kvBody+=`<p><span class="calc">${esc(eur(d.kvGross))} × ${esc(pct(emp,3))} = ${esc(eur(d.kvGross*emp/100))}</span></p>`; if(!isManual) kvBody+=check(d.kv,Math.round(d.kvGross*emp)/100); } }
+  else kvBody=`<p>${esc(t("kvBodyNoRate"))}</p>`;
+  if(d.kvGross && d.taxGross && d.kvGross < d.taxGross-1) kvBody+=`<p>${esc(t("capNote")(eur(d.kvGross)))}</p>`;
+  h+=itemHTML({n:t("kv"),de:"KV-Beitrag"+(d.insurer?" · "+d.insurer:""),v:eur(d.kv),body:kvBody});
+  // RV
+  let rvBody=`<p>${esc(t("rvBody"))}</p>`;
+  if(d.rvGross){ rvBody+=`<p><span class="calc">${esc(eur(d.rvGross))} × ${esc(pct(9.3,1))} = ${esc(eur(d.rvGross*0.093))}</span></p>`; if(!isManual) rvBody+=check(d.rv,Math.round(d.rvGross*9.3)/100);
+    if(d.taxGross && d.rvGross < d.taxGross-1) rvBody+=`<p>${esc(t("capNote")(eur(d.rvGross)))}</p>`; }
+  h+=itemHTML({n:t("rv"),de:"RV-Beitrag",v:eur(d.rv),body:rvBody});
+  // PV + AV
+  let pvRate=d.pvGross?d.pv/d.pvGross*100:null, kind="";
+  if(pvRate!=null){ if(Math.abs(pvRate-2.4)<0.03) kind=t("pvChildless"); else if(Math.abs(pvRate-1.8)<0.03) kind=t("pvChild"); else if(Math.abs(pvRate-2.3)<0.03||Math.abs(pvRate-2.9)<0.03) kind=t("pvSax"); else if(pvRate<1.8) kind=t("pvKids"); }
+  else if(d.childlessFlag) kind=t("pvChildless");
+  const pvBody=`<p>${esc(t("pvBody")(pvRate!=null?pct(pvRate,2):(d.childlessFlag?pct(2.4,1):pct(1.8,1)),kind))}</p>`+(d.pvGross?`<p><span class="calc">${esc(eur(d.pvGross))} × ${esc(pct(pvRate,2))} = ${esc(eur(d.pv))}</span></p>`:"");
+  let avBody=`<p>${esc(t("avBody"))}</p>`;
+  if(d.avGross){ avBody+=`<p><span class="calc">${esc(eur(d.avGross))} × ${esc(pct(1.3,1))} = ${esc(eur(d.avGross*0.013))}</span></p>`; if(!isManual) avBody+=check(d.av,Math.round(d.avGross*1.3)/100); }
+  h+=`<div class="pair">`+itemHTML({n:t("pv"),de:"PV-Beitrag",v:eur(d.pv),body:pvBody,short:1})+itemHTML({n:t("av"),de:"AV-Beitrag",v:eur(d.av),body:avBody,short:1})+`</div>`;
+  h+=`<div class="pair">`+itemHTML({n:t("soli"),de:"Solidaritätszuschlag",v:eur(d.soli),zero:!d.soli,short:1,body:`<p>${esc(d.soli?t("soliBody"):t("soliZero"))}</p>`})+
+     itemHTML({n:t("church"),de:"Kirchensteuer",v:eur(d.church),zero:!d.church,short:1,body:`<p>${esc(d.church?t("churchBody"):t("churchZero"))}</p>`})+`</div>`;
+  h+=`</section></div>`;
+  // net
+  const chips=[`${t("fGross")} ${eur(d.totalGross)}`,`− ${t("fTax")} ${eur(d.taxTotal)}`,`− ${t("fSv")} ${eur(d.svTotal)}`,`= ${t("fNet")} ${eur(d.netIncome)}`]
+    .concat(d.netItems.map(p=>`${p.amount<0?"−":"+"} ${t("net")[classifyNet(p.label)][0]} ${eur(Math.abs(p.amount))}`));
+  h+=`<section class="net"><div class="ttl">${esc(t("netT"))}</div><div class="sub">${esc(t("netSub"))}</div><div class="big">${esc(eur(d.payout))}</div><div class="flow">${chips.map(c=>`<span>${esc(c)}</span>`).join("")}</div>`+
+     (d.netItems.length?`<p>${esc(t("netBody"))}</p>`:"")+`</section>`;
+  // split bar
+  if(d.totalGross>0){
+    const neg=d.netItems.filter(p=>p.amount<0).reduce((a,p)=>a-p.amount,0);
+    const segs=[[Math.max(0,d.totalGross-d.taxTotal-d.svTotal-neg),"var(--net)",t("sPaid")],[d.taxTotal,"var(--ded)",t("sTax")],[d.svTotal,"var(--ded-line)",t("sSv")],[neg,"var(--gross)",t("sDed")]].filter(s=>s[0]>0.005);
+    const tot=segs.reduce((a,s)=>a+s[0],0);
+    h+=`<section class="section"><h3>${esc(t("splitT"))}</h3><p class="lead">${esc(t("splitLead")(Math.round(d.payout/d.totalGross*100)))}</p>`+
+       `<div class="stack" role="img" aria-label="${esc(segs.map(s=>s[2]+" "+pct(s[0]/tot*100,1)).join(", "))}">`+segs.map(s=>`<div style="width:${(s[0]/tot*100).toFixed(2)}%;background:${s[1]}"></div>`).join("")+`</div>`+
+       `<div class="legend">`+segs.map(s=>`<span><i style="background:${s[1]}"></i>${esc(s[2])} ${esc(pct(s[0]/tot*100,1))}</span>`).join("")+`</div></section>`;
+  }
+  // info cards
+  h+=`<div class="info">`+
+    itemHTML({n:t("infoClass"),de:"StKl",v:String(d.taxClass||"–"),body:`<p>${esc(t("infoClassBody")(d.taxClass))}</p>`,short:1})+
+    itemHTML({n:t("infoIns"),de:"Krankenkasse",v:d.insurer||(d.kvRateTotal?pct(d.kvRateTotal):"–"),body:`<p>${esc(t("infoInsBody")(d.kvRateTotal?pct(d.kvRateTotal):null))}</p>`,short:1})+
+    (d.agSv!=null?itemHTML({n:t("infoAg"),de:"SV-AG-Anteil",v:eur(d.agSv),body:`<p>${esc(t("infoAgBody"))}</p>`,cls:"b",short:1}):"")+
+    (d.agTotal!=null?itemHTML({n:t("infoCost"),de:"Gesamtkosten",v:eur(d.agTotal),body:`<p>${esc(t("infoCostBody")(eur(d.totalGross),eur(d.agSv),d.agAdd?eur(d.agAdd):null))}</p>`,cls:"b",short:1}):"")+
+    `</div>`;
+  // ytd
+  const y=d.ytd||{};
+  if(Object.keys(y).length){
+    const taxFreeM=d.payments.filter(p=>p.tax==="F").reduce((a,p)=>a+p.amount,0);
+    const rows=[["yGross","Gesamt-Brutto",d.totalGross,y.gross],["yTaxGross","Steuer-Brutto",d.taxGross,y.taxGross],["yTaxFree","Steuerfreie Bezüge",taxFreeM,y.taxFree],["yWage","Lohnsteuer",d.wageTax,y.wageTax],
+      ["ySoli","Solidaritätszuschlag",d.soli,y.soli],["yChurch","Kirchensteuer",d.church,y.church],["ySvGross","SV-Brutto",d.rvGross,y.svGross],["yKv","KV-Beitrag",d.kv,y.kv],["yRv","RV-Beitrag",d.rv,y.rv],["yAv","AV-Beitrag",d.av,y.av],["yPv","PV-Beitrag",d.pv,y.pv]]
+      .filter(r=>r[3]!=null && !(r[3]===0 && !r[2]));
+    h+=`<section class="section"><h3>${esc(t("ytdT"))}</h3><p class="lead">${esc(t("ytdLead"))}</p><div class="tablewrap"><table><thead><tr><th>${esc(t("item"))}</th><th>${esc(t("term"))}</th><th class="num">${esc(t("month"))}</th><th class="num">${esc(t("ytdCol"))}</th></tr></thead><tbody>`+
+      rows.map(r=>`<tr><td>${esc(t(r[0]))}</td><td>${esc(r[1])}</td><td class="num">${esc(r[2]!=null?eur(r[2]):"–")}</td><td class="num">${esc(eur(r[3]))}</td></tr>`).join("")+`</tbody></table></div></section>`;
+  }
+  // glossary
+  h+=`<section class="section"><h3>${esc(t("glossT"))}</h3><div class="gloss">`+t("gloss").map(g=>`<div><b>${esc(g[0])}</b><span>${esc(g[1])}</span></div>`).join("")+`</div></section>`;
+  h+=`<p class="foot">${esc(t("foot"))}</p>`;
+  R.innerHTML=h;
+  $("btnNew").addEventListener("click",()=>{ current=null; R.innerHTML=""; lastPdf=null; updateAiBtn(); setStatus(null); window.scrollTo({top:0,behavior:"smooth"}); });
+  const dl=$("btnDl"); if(dl) dl.addEventListener("click",downloadHtml);
+}
+async function downloadHtml(){
+  if(!downloads||!current) return;
+  const css=document.querySelector("style").textContent;
+  const report=$("report").cloneNode(true); report.querySelectorAll(".rtools").forEach(n=>n.remove());
+  const title=t("title")+" – "+(current.month?t("months")[current.month-1]+" ":"")+(current.year||"");
+  const html=`<!DOCTYPE html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>${esc(title)}</title>`+
+    `<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"><style>${css}</style></head><body><div class="wrap"><h1 style="font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-size:40px;margin:0">${esc(t("title"))}</h1>${report.innerHTML}</div></body></html>`;
+  const fn=`busta-paga-${current.year||""}-${String(current.month||"").padStart(2,"0")}.html`.replace("--","-");
+  try{ await downloads.save({filename:fn,data:new Blob([html],{type:"text/html"})}); }catch(e){ /* declined or unavailable */ }
+}
+
+applyStatic();
+})();
+
+</script>
+</body>
+</html>
