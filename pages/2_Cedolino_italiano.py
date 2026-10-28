@@ -11,7 +11,8 @@ if str(BASE_DIR) not in sys.path:
 import streamlit as st
 
 from src import de_parser, it_cedolino, it_parser
-from src.i18n import selettore_lingua
+from src.i18n import mesi, selettore_lingua
+from src.stampa import bottone_stampa
 from src.it_payslip import calcola
 from src.it_render import report_html
 
@@ -48,6 +49,8 @@ with tab_pdf:
         else:
             if d.get("ok") and d.get("totalComp") is not None and d.get("netto") is not None:
                 st.html(it_cedolino.report_html(d, tema_scuro(), lang))
+                periodo = f" {mesi(lang)[d['month'] - 1]} {d.get('year', '')}" if d.get("month") else ""
+                bottone_stampa(it_cedolino.report_html(d, False, lang), tr("Cedolino italiano", "Italian payslip") + periodo, lang)
             else:
                 st.warning(tr("Non riconosco questo formato di cedolino (o il PDF è una scansione). Prova il calcolo da RAL.",
                               "I don't recognise this payslip format (or the PDF is a scan). Try the calculation from gross salary."))
@@ -68,3 +71,4 @@ with tab_ral:
     netto_cedolino = c[2].number_input(tr("Netto mensile sul tuo cedolino (facoltativo)", "Monthly net pay on your payslip (optional)"), 0.0, step=10.0)
     r = calcola(ral, mens, reg, com, extra_ded_annue=extra * mens)
     st.html(report_html(r, reg, com, netto_cedolino or None, tema_scuro(), lang))
+    bottone_stampa(report_html(r, reg, com, netto_cedolino or None, False, lang), tr("Cedolino italiano da RAL", "Italian payslip from gross salary"), lang)

@@ -110,3 +110,17 @@ def test_report_html_in_inglese():
         assert parola not in en
     assert "Tocca per i dettagli" in report_html(d, lang="it")
     assert "Tocca per i dettagli" in report_html(d)
+
+
+def test_bottone_stampa():
+    from src.de_calc import calcola
+    from src.de_render import report_html
+    from src.stampa import componente_html, documento_stampa
+    d = normalizza(calcola(75_000, 17.29, False))
+    rep = report_html(d, False, "en")
+    doc = documento_stampa(rep, "Titolo <x>", "en")
+    assert "window.print()" in doc and "&lt;x&gt;" in doc and "details" in doc
+    comp = componente_html(rep, "T", "en")
+    assert "Print / Save as PDF" in comp and "Stampa" not in comp
+    assert comp.count("</script>") == 1          # il documento incorporato non deve chiudere lo script esterno
+    assert "Stampa / Salva come PDF" in componente_html(rep, "T", "it")

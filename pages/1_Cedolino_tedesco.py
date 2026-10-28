@@ -14,6 +14,7 @@ from src import de_calc, de_parser
 from src.de_payslip import da_inserimento_manuale, normalizza
 from src.de_render import report_html
 from src.i18n import mesi, selettore_lingua
+from src.stampa import bottone_stampa
 
 lang = selettore_lingua()
 tr = lambda it, en: en if lang == "en" else it
@@ -66,6 +67,8 @@ def mostra(d: dict) -> None:
     except Exception:  # versioni di Streamlit senza st.context.theme
         dark = None
     st.html(report_html(d, dark, lang))
+    periodo = f" {mesi(lang)[d['month'] - 1]} {d.get('year', '')}" if d.get("month") else f" {d.get('year', '')}"
+    bottone_stampa(report_html(d, False, lang), tr("Cedolino tedesco", "German payslip") + periodo, lang)
 
 
 st.title(tr("🇩🇪 Cedolino tedesco", "🇩🇪 German payslip"))
