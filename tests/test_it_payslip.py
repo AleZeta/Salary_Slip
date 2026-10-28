@@ -1,0 +1,36 @@
+import pytest
+
+from src.it_payslip import calcola, cuneo_fiscale, detrazione_lavoro_dipendente, irpef_per_scaglioni
+
+
+def test_irpef_scaglioni_40k():
+    # imponibile 36.324 -> 28.000*23% + 8.324*33%
+    lorda, _ = irpef_per_scaglioni(36_324)
+    assert lorda == pytest.approx(28_000 * 0.23 + 8_324 * 0.33)
+
+
+def test_detrazione_continua_alle_soglie():
+    assert detrazione_lavoro_dipendente(15_000) == pytest.approx(1_955)
+    assert detrazione_lavoro_dipendente(15_001) == pytest.approx(3_099.9, abs=0.1)  # salto previsto dalla norma
+    assert detrazione_lavoro_dipendente(28_000) == pytest.approx(1_910)
+    assert detrazione_lavoro_dipendente(50_000) == 0
+
+
+def test_cuneo():
+    assert cuneo_fiscale(10_000, 9_000)[0] == pytest.approx(530)
+    assert cuneo_fiscale(30_000, 27_000)[1] == 1_000
+    assert cuneo_fiscale(40_000, 36_000)[1] == pytest.approx(500)
+    assert cuneo_fiscale(60_000, 55_000) == (0.0, 0.0)
+
+
+def test_netto_coerente():
+    r = calcola(40_000, 13, 1.73, 0.8)
+    assert r.inps == pytest.approx(3_676)
+    assert r.netto == pytest.approx(r.ral - r.trattenute + r.bonus_cuneo)
+    assert 27_000 < r.netto < 29_000
+    assert r.tfr == pytest.approx(40_000 / 13.5)
+
+
+def test_ral_zero():
+    r = calcola(0)
+    assert r.netto == 0 and r.irpef_netta == 0
